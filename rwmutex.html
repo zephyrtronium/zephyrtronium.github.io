@@ -82,7 +82,7 @@ So are channels.
 <p>
 The most basic type of synchronization primitive is the atomic operation. These are single
 statements that are implemented by the compiler in a special way to ensure that any other atomic
-operation on the same variable (that wasn&#39;t in the past) will always observe the result of the
+operation on the same variable (which wasn&#39;t in the past) will always observe the result of the
 current one. To use the language of the Go memory model, atomic operations are always strictly in
 &ldquo;happens before&rdquo; order – they never &ldquo;happen concurrently.&rdquo; Ironically, if an algorithm has no
 operations that &ldquo;happen concurrently,&rdquo; we say it is &ldquo;concurrent.&rdquo;
@@ -91,15 +91,27 @@ operations that &ldquo;happen concurrently,&rdquo; we say it is &ldquo;concurren
 Arguably the most important atomic operation is the atomic compare-and-swap, or CAS. It does exactly
 what its name suggests: swap the value of a variable for a new one if and only if it&#39;s
 instantaneously equal to some other given value, and indicate to the processor whether the swap
-happened. Other common atomic operations include things like loading, storing, adding, and
-exchanging. These are exactly the functions available in package sync/atomic.
+happened. x86 has a special instruction to implement it: LOCK CMPXCHG. (LOCK is an instruction
+prefix, essentially the x86 name for atomic. More on it later.) The details of how assembly
+instructions map to CPU cycles are complicated, but a decent analogy would be that if this were
+Python, there would be a built-in function for CAS.
+</p>
+<p>
+Other common atomic operations include things like loading, storing, adding, and exchanging; these
+are exactly the functions available in package sync/atomic. As an aside, there are other atomic
+operations to be aware of. Test-and-set is like a weaker version of CAS which sets a bit to 1 and
+returns the value it had prior. x86 also provides atomic versions of bitwise NOT, AND, NAND, OR, and
+XOR, as well as subtraction, negation, and fetch-and-add. Furthermore, any operation on a single
+value can be made atomic by using CAS in a loop, and more complicated protocols can be derived to
+make large classes of algorithms lock-free.
 </p>
 <p>
 &ldquo;Atomic&rdquo; has a double meaning, as well. I&#39;ve been talking about how they&#39;re &ldquo;indivisible&rdquo; operations
 in concurrent algorithms. They also serve as the most basic, fundamental pieces of larger algorithms
-like mutexes and semaphores, all the way up to highly versatile data structures like sync.Map. We&#39;re
-going to see a lot of atomic operations as we tour through Mutex and RWMutex, and they&#39;re going to
-be constantly in the background of our analysis of the performance of those types.
+like mutexes and semaphores (which are like mutexes that can be locked a chosen number of times at
+once), all the way up to highly versatile data structures like sync.Map. We&#39;re going to see a lot of
+atomic operations as we tour through Mutex and RWMutex, and they&#39;re going to be constantly in the
+background of our analysis of the performance of those types.
 </p>
 <a class="permalink" href="#hdr-Mutex"><h3 id="hdr-Mutex">Mutex</h3></a>
 <p>
@@ -123,28 +135,27 @@ Mutex.Lock works is surprisingly simple:
 
 // Pseudocode, and heavily simplified besides:
 func (m *Mutex) lockSlow() {
-	i := 0
+	iter := 0
 	for {
-		if i &lt; maxSpins {
+		if iter &lt; maxSpins {
 			if atomic.CompareAndSwapInt32(&amp;m.state, 0, 1) {
 				return
 			}
-			i++
+			iter++
 			continue
 		}
 		m.updateState(mutexStarving)
 		enqueueAtFront := (were we put to sleep while locking this mutex?)
 		runtime_SemacquireMutex(&amp;m.sema, enqueueAtFront, 1)
-		i = 0
+		iter = 0
 	}
 }
 </pre>
 <p>
-CAS is the core of the mutex algorithm – in any language, not just in Go. CAS is so important to
-synchronization protocols that x86 has a special instruction to implement it: LOCK CMPXCHG. (LOCK is
-an instruction prefix, essentially the x86 name for atomic. More on it later.) The details of how
-assembly instructions map to CPU cycles are complicated, but a decent analogy would be that if this
-were Python, there would be a built-in function for CAS.
+CAS is the core of the mutex algorithm – in any language, not just in Go. (Well, technically
+speaking, a mutex can also be implemented using test-and-set or fetch-and-add, but CAS can solve all
+the problems those can and more.) Locking a mutex really means detecting when this goroutine is able
+to atomically change the value of the mutex state.
 </p>
 <p>
 lockSlow is the &ldquo;slow path&rdquo; of Lock, extracted so that the compiler can inline Lock itself to avoid
