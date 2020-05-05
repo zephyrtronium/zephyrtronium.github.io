@@ -85,33 +85,33 @@ statements that are implemented by the compiler in a special way to ensure that 
 operation on the same variable (which wasn&#39;t in the past) will always observe the result of the
 current one. To use the language of the Go memory model, atomic operations are always strictly in
 &ldquo;happens before&rdquo; order – they never &ldquo;happen concurrently.&rdquo; Ironically, if an algorithm has no
-operations that &ldquo;happen concurrently,&rdquo; we say it is &ldquo;concurrent.&rdquo;
+operations that &ldquo;happen concurrently&rdquo; with a write, we say the algorithm is &ldquo;concurrent.&rdquo;
 </p>
 <p>
-Arguably the most important atomic operation is the atomic compare-and-swap, or CAS. It does exactly
-what its name suggests: swap the value of a variable for a new one if and only if it&#39;s
-instantaneously equal to some other given value, and indicate to the processor whether the swap
-happened. x86 has a special instruction to implement it: LOCK CMPXCHG. (LOCK is an instruction
-prefix, essentially the x86 name for atomic. More on it later.) The details of how assembly
-instructions map to CPU cycles are complicated, but a decent analogy would be that if this were
-Python, there would be a built-in function for CAS.
+Arguably the most important atomic operation is the atomic compare-and-swap, or CAS. It does what
+its name suggests: swap the value of a variable for a new one if and only if it&#39;s instantaneously
+equal to some other given value, and indicate to the processor whether the swap happened. x86 has a
+special instruction to implement it: LOCK CMPXCHG. (LOCK is an instruction prefix, essentially the
+x86 name for atomic. More on it later.) The details of how assembly instructions map to CPU cycles
+are complicated, but a decent analogy would be that if this were Python, there would be a built-in
+function for CAS.
 </p>
 <p>
 Other common atomic operations include things like loading, storing, adding, and exchanging; these
 are exactly the functions available in package sync/atomic. As an aside, there are other atomic
-operations to be aware of. Test-and-set is like a weaker version of CAS which sets a bit to 1 and
-returns the value it had prior. x86 also provides atomic versions of bitwise NOT, AND, NAND, OR, and
-XOR, as well as subtraction, negation, and fetch-and-add. Furthermore, any operation on a single
-value can be made atomic by using CAS in a loop, and more complicated protocols can be derived to
-make large classes of algorithms lock-free.
+operations not directly available in Go. Test-and-set sets a single bit to 1 and returns the value
+it had prior. x86 also provides atomic versions of bitwise NOT, AND, NAND, OR, and XOR, as well as
+subtraction, negation, and fetch-and-add. Furthermore, any operation on a single value can be made
+atomic by using CAS in a loop, and more complicated protocols can be derived to make large classes
+of lock-free concurrent algorithms.
 </p>
 <p>
-&ldquo;Atomic&rdquo; has a double meaning, as well. I&#39;ve been talking about how they&#39;re &ldquo;indivisible&rdquo; operations
-in concurrent algorithms. They also serve as the most basic, fundamental pieces of larger algorithms
-like mutexes and semaphores (which are like mutexes that can be locked a chosen number of times at
-once), all the way up to highly versatile data structures like sync.Map. We&#39;re going to see a lot of
-atomic operations as we tour through Mutex and RWMutex, and they&#39;re going to be constantly in the
-background of our analysis of the performance of those types.
+&ldquo;Atomic&rdquo; has a double meaning. I&#39;ve been talking about how they&#39;re like indivisible operations in
+concurrent algorithms, but they also serve as the most basic, fundamental pieces of larger
+algorithms like mutexes and semaphores (which are like mutexes that can be locked a chosen number of
+times at once), all the way up to highly versatile data structures like sync.Map. We&#39;re going to see
+a lot of atomic operations as we tour through Mutex and RWMutex, and they&#39;re going to be constantly
+in the background of our analysis of the performance of those types.
 </p>
 <a class="permalink" href="#hdr-Mutex"><h3 id="hdr-Mutex">Mutex</h3></a>
 <p>
@@ -133,21 +133,22 @@ Mutex.Lock works is surprisingly simple:
 	m.lockSlow()
 }
 
-// Pseudocode, and heavily simplified besides:
+// Pseudocode, and heavily simplified:
 func (m *Mutex) lockSlow() {
 	iter := 0
+	wakeMeFirst := false
 	for {
-		if iter &lt; maxSpins {
+		if iter &lt; maxSpins() {
 			if atomic.CompareAndSwapInt32(&amp;m.state, 0, 1) {
 				return
 			}
 			iter++
 			continue
 		}
-		m.updateState(mutexStarving)
-		enqueueAtFront := (were we put to sleep while locking this mutex?)
-		runtime_SemacquireMutex(&amp;m.sema, enqueueAtFront, 1)
+		m.starving()
+		sleepOnSemaphore(&amp;m.sema, wakeMeFirst)
 		iter = 0
+		wakeMeFirst = true
 	}
 }
 </pre>
@@ -161,7 +162,7 @@ to atomically change the value of the mutex state.
 lockSlow is the &ldquo;slow path&rdquo; of Lock, extracted so that the compiler can inline Lock itself to avoid
 the function call overhead. lockSlow is big and a lil scary, but conceptually, it tries a few extra
 times to acquire the mutex, does some magic with the runtime to implement &ldquo;starvation mode,&rdquo; and
-puts the waiting goroutine to sleep by calling runtime_SemacquireMutex on m.sema.
+puts the waiting goroutine to sleep until its semaphore is released.
 </p>
 <p>
 At the other end of the protocol, we have Mutex.Unlock:
@@ -189,8 +190,8 @@ complicated than I&#39;m showing here (though much simpler than lockSlow).
 <p>
 We can summarize the Mutex algorithm as follows:
 </p>
-<pre>- Acquiring the mutex: loop until CAS(mutex.state from 0 to 1)
-- Releasing the mutex: if Atomic(mutex.state += -1) &lt; 0 then panic
+<pre>- Acquiring the mutex: loop until CAS(mutex.state from 0 to 1).
+- Releasing the mutex: if Atomic(mutex.state += -1) &lt; 0 then panic.
 </pre>
 <a class="permalink" href="#hdr-RWMutex"><h3 id="hdr-RWMutex">RWMutex</h3></a>
 <p>
@@ -207,7 +208,7 @@ Now that we know what Mutex looks like, let&#39;s look at RWMutex.
 <p>
 The Mutex in the first field is eight bytes, so an RWMutex is twenty-four bytes on its own. An
 RWMutex being sixteen bytes larger than a Mutex probably isn&#39;t going to mean the difference between
-a functioning program and heap exhaustion, but it will be important later.
+a functioning program and heap exhaustion, but we&#39;ll see how it&#39;s an important difference later.
 </p>
 <p>
 For now, the important observation is that not only does an RWMutex include a Mutex, but it also has
@@ -216,17 +217,17 @@ many additional fields, which implies additional work. Let&#39;s break down RWMu
 <pre>func (rw *RWMutex) RLock() {
 	if atomic.AddInt32(&amp;rw.readerCount, 1) &lt; 0 {
 		// A writer is pending, wait for it.
-		runtime_SemacquireMutex(&amp;rw.readerSem, false, 0)
+		// Pseudocode:
+		sleepOnSemaphore(&amp;rw.readerSem, false)
 	}
 }
 </pre>
 <p>
-Ok, not too bad. I mentioned that runtime_SemacquireMutex is used in Mutex.lockSlow as well to put
-the locking goroutine to sleep when needed; here it is the entire slow path. We&#39;re using an atomic
-add rather than CAS so that we can track multiple readers; we&#39;ll see later that RWMutex.Lock ensures
-readerCount is negative while the rwmutex is locked for writing. All in all, RWMutex.RLock amounts
-to essentially the same amount of work that Mutex.Lock does in the happy path, and quite a bit less
-in the slow path.
+In Mutex.Lock, sleepOnSemaphore (the real function is semacquire1 in package runtime) was a part of
+the slow path; here, it&#39;s the whole thing. We&#39;re using an atomic add rather than CAS so that we can
+track multiple readers; we&#39;ll see later that RWMutex.Lock ensures readerCount is negative while the
+rwmutex is locked for writing. All in all, RWMutex.RLock amounts to essentially the same amount of
+work that Mutex.Lock does in the happy path, and quite a bit less in the slow path.
 </p>
 <p>
 RUnlock is very similar to RLock, atomically adding -1 to decrement the count, but it does have a
@@ -249,7 +250,8 @@ func (rw *RWMutex) rUnlockSlow(readerCount int32) {
 	// A writer is pending.
 	if atomic.AddInt32(&amp;rw.readerWait, -1) == 0 {
 		// The last reader unblocks the writer.
-		runtime_Semrelease(&amp;rw.writerSem, false, 1)
+		// Pseudocode:
+		wakeWaiter(&amp;rw.writerSem)
 	}
 }
 </pre>
@@ -264,7 +266,8 @@ The rest are needed for the details of the (writer) Lock and Unlock methods.
 	r := atomic.AddInt32(&amp;rw.readerCount, -rwmutexMaxReaders) + rwmutexMaxReaders
 	// Wait for active readers.
 	if r != 0 &amp;&amp; atomic.AddInt32(&amp;rw.readerWait, r) != 0 {
-		runtime_SemacquireMutex(&amp;rw.writerSem, false, 0)
+		// Pseudocode:
+		sleepOnSemaphore(&amp;rw.writerSem, false)
 	}
 }
 
@@ -277,19 +280,20 @@ func (rw *RWMutex) Unlock() {
 	}
 	// Unblock blocked readers, if any.
 	for i := 0; i &lt; int(r); i++ {
-		runtime_Semrelease(&amp;rw.readerSem, false, 0)
+		// Pseudocode:
+		wakeWaiter(&amp;rw.readerSem)
 	}
 	// Allow other writers to proceed.
 	rw.w.Unlock()
 }
 </pre>
 <p>
-To lock an RWMutex for writing, you first lock the plain mutex inside it, then inform readers that
-there is a waiting writer. This guarantees &ldquo;forward progress,&rdquo; the property that any goroutine which
-attempts to lock the RWMutex – for writing or for reading – will eventually acquire it, assuming
-each lock is paired appropriately with an unlock. Lastly, if there were any readers at the moment
-this writer made its announcement, then we record the number of them in rw.readerWait, and
-runtime_SemacquireMutex puts the writer to sleep.
+To lock an RWMutex for writing, you first lock the plain mutex inside it, which only writers try to
+do, then inform readers that there is a waiting writer. This guarantees &ldquo;forward progress,&rdquo; the
+property that any goroutine which attempts to lock the RWMutex – for writing or for reading – will
+eventually acquire it, assuming each lock is paired appropriately with an unlock. Lastly, if there
+were any readers at the moment this writer made its announcement, then we record the number of them
+in rw.readerWait and go to sleep.
 </p>
 <p>
 Unlocking is a more interesting process. First, we open the RWMutex back up to readers. The next
@@ -301,7 +305,7 @@ is O(readers).
 So, we have an important result already about the applicability of RWMutex: If the number of
 goroutines that might use RLock is not O(1), then an RWMutex will almost certainly be a bottleneck.
 Now, that very well may be insignificant; most often, it&#39;s more efficient to spawn GOMAXPROCS
-goroutines and delegate work among them than to spawn a new goroutine for each operation, because it
+goroutines and delegate work among them than to spawn a new goroutine for each task, because it
 makes less work for the scheduler. But for things like http.ListenAndServe that handle concurrency
 internally using the latter model, we can probably conclude just from reading our code whether
 RWMutex will be slow.
@@ -310,25 +314,30 @@ RWMutex will be slow.
 To summarize the protocols for RWMutex:
 </p>
 <pre>- Acquiring the rwmutex for reading:
-	1. Atomic(rw.readerCount += 1).
-	2. If rw.readerCount is negative, sleep while the writer finishes (Unlock).
+	1.	Atomic(rw.readerCount += 1).
+	2.	If rw.readerCount is negative, sleep while the writer
+		finishes (in Unlock).
 - Releasing the rwmutex from reading:
-	1. Atomic(rw.readerCount += -1).
-	2. If rw.readerCount is negative:
-		i.   Check the mutex was locked for reading, else panic.
-		ii.  Atomic(rw.readerWait += -1).
-		iii. If rw.readerWait is zero, wake the pending writer (Lock).
+	1.	Atomic(rw.readerCount += -1).
+	2.	If rw.readerCount is negative:
+		A.	Check the mutex was locked for reading, else panic.
+		B.	Atomic(rw.readerWait += -1).
+		C.	If rw.readerWait is zero, wake the pending writer
+			(sleeping in Lock).
 - Acquiring the rwmutex for writing:
-	1. Lock the writer mutex. (Loop until CAS(rw.w.state from 0 to 1).)
-	2. Make rw.readerCount negative to prevent more readers.
-	3. Set rw.readerWait to the number of active readers.
-	4. If there were any active readers, sleep until the readers finish (RUnlock).
+	1.	Lock the writer mutex.
+		(Loop until CAS(rw.w.state from 0 to 1).)
+	2.	Make rw.readerCount negative to prevent more readers.
+	3.	Set rw.readerWait to the number of active readers.
+	4.	If there were any active readers, sleep until the readers
+		finish (in RUnlock).
 - Releasing the rwmutex from writing:
-	1. Make rw.readerCount positive, allowing readers to acquire the mutex.
-	2. If the mutex was not locked for writing, panic.
-	3. For each reader when the rwmutex was locked for writing:
-		Wake a reader (RLock).
-	4. Unlock the writer mutex. (Atomic(rw.w.state += -1).)
+	1.	Make rw.readerCount positive, allowing readers to acquire
+		the rwmutex.
+	2.	If the rwmutex was not locked for writing, panic.
+	3.	For each reader when the rwmutex was locked for writing:
+		Wake a reader (sleeping in RLock).
+	4.	Unlock the writer mutex. (Atomic(rw.w.state += -1).)
 </pre>
 <p>
 Of course, there are more API points for RWMutex than there are for Mutex, but we can also see that
@@ -340,65 +349,68 @@ atomic addition. So that should be faster than acquiring a plain Mutex, which do
 Spoiler: RWMutex can have worse performance than a plain Mutex, even if there are zero writers.
 </p>
 <p>
-It depends on the hardware and on the exact usage. I&#39;ll echo my initial claim: the only way to be
-certain whether RWMutex will perform well is to benchmark and profile. But we can make some
-predictions by analyzing how CPU caches work. This will take a lot of words, because we are
-describing some of the deepest magic of hardware.
+It depends on the hardware and on the exact usage, and it is unlikely for RLock to be quite that
+bad. I&#39;ll echo my initial claim: the only way to be certain whether RWMutex will perform well is to
+benchmark and profile. But we can make some predictions by analyzing how CPU caches work. This will
+take a lot of words, because we are describing some of the deepest magic of hardware.
 </p>
 <a class="permalink" href="#hdr-Computer__Meet_Physics"><h3 id="hdr-Computer__Meet_Physics">Computer, Meet Physics</h3></a>
 <p>
-As a programmer, you probably know that computers hold up to several terabytes of data in a thing
-called &ldquo;memory&rdquo; or &ldquo;RAM.&rdquo; In conventional PCs and servers, RAM exists physically on little silicon
-sticks called DIMMs that plug into the motherboard near the CPU. It is less probable, but still
-fairly likely, you are aware that the CPU operates primarily on values stored in &ldquo;registers,&rdquo;
-typically holding 32 or 64 bits, or sometimes up to 256 bits for vector registers. The CPU copies
-bit patterns between RAM and registers in groups of 8, 16, 32, ... bits at a time, so that it can
-work with more than just a few dozen registers&#39; worth of data.
+A common adage goes something like &ldquo;memory is fast, hard drives are slow, and networks are really
+slow.&rdquo; That&#39;s close to true, but the situation with memory is complicated.
 </p>
 <p>
-When the CPU needs to access values stored in RAM, it sends an electrical signal encoding the
-address it wants to the memory controller somewhere near where the memory is plugged in, which then
-sends an electrical signal to chips on the memory sticks, which send electrical signals to some
-physical structures on the stick and wait some amount of time for electrical signals to stabilize
-enough to send electrical signals back to the memory controller, which sends an electrical signal
-back to the CPU encoding the values of the memory at the address the CPU originally asked for.
+Here&#39;s a simplified description of the steps involved when the CPU needs to access values stored in
+RAM:
+</p>
+<pre>1.	CPU sends an electrical signal encoding the address it wants to
+	the memory controller.
+2.	Memory controller sends the electrical signal to the
+	appropriate DIMM.
+3.	DIMM interface sends the electrical signal to the appropriate
+	microcontroller.
+4.	Microcontroller sends the electrical signal to physical storage
+	structures.
+5.	Physical storage structures gradually form a stable electrical
+	signal representing the data they store.
+6.	Microcontroller sends the electrical signal to the DIMM
+	interface.
+7.	... to the memory controller.
+8.	... to the CPU.
+</pre>
+<p>
+All of these operations take time. Fetching values from a typical DDR4-2400 DIMM that has 18-18-18
+timings takes more than 65 nanoseconds, even being very optimistic in the calculations. This is
+somewhere in the vicinity of 100 to 300 CPU clock cycles during which the CPU cannot continue doing
+work on that thread.
 </p>
 <p>
-When you&#39;re trying to do four billion calculations per second, every nanosecond matters. Electrical
-signals are fast, but in electron distances, RAM is far away from the CPU. Plus, in order to fit as
-much as 64 gibibytes of data in 133.35×31.25×1.20 millimeters, each of the physical storage
-structures has to be able to hold many states, which means the responses from them can take a long
-time to stabilize.
-</p>
-<p>
-It adds up. Even if we&#39;re optimistic in our calculations, fetching values from a typical DDR4-2400
-DIMM with 18-18-18 timings takes more than 65 nanoseconds. This is somewhere in the vicinity of 100
-to 300 CPU clock cycles during which the CPU cannot continue doing work on that thread.
-</p>
-<p>
-For decades, one of the primary ways to improve the performance of computers has been to reduce the
-number of operations which have to reach all the way to RAM. The primary mechanism to implement this
-has been CPU caches (L1, L2, L3, and so on). These are chunks of memory of increasing size located
-on the CPU itself, designed to resolve quickly rather than to pack as much storage as possible onto
+One of the primary ways to improve computer performance is to reduce the number of operations which
+have to reach all the way to RAM, by introducing CPU caches. These are chunks of memory located on
+the CPU itself, designed to resolve quickly rather than to pack as much storage as possible onto
 little sticks. Each cache level is a little physically further from the CPU control unit, so it&#39;s a
 little slower, but even the deepest level of cache is orders of magnitude faster than RAM.
 </p>
 <p>
 Another related innovation is the &ldquo;cache line.&rdquo; On amd64, the machine word size is eight bytes, but
-caches fetch and write back memory 64 bytes at a time, equivalent to eight machine words. (The cache
-line size was the same on most 32-bit x86 microarchitectures as well, making them sixteen machine
-words there.) So, programs which access nearby memory tend to issue fewer total fetches to RAM. This
-is the reason you often hear – and probably eventually measure – that linked lists tend to perform
-worse than arrays, even on operations where naïve complexity theory indicates the linked list should
-be much better.
+caches fetch and write back memory 64 bytes at a time, equivalent to eight machine words. So,
+programs which access nearby memory tend to issue fewer total fetches to RAM. This is the reason you
+often hear – and probably eventually measure – that linked lists tend to perform worse than arrays,
+even on operations where naïve complexity theory indicates the linked list should be much better.
+</p>
+<p>
+(The cache line size was 64 bytes on most 32-bit x86 microarchitectures as well, making them sixteen
+machine words there. Note that I do say &ldquo;microarchitectures,&rdquo; i.e. the specific processor model;
+cache line sizes are not specified in the instruction set architecture and are allowed to differ
+between machines.)
 </p>
 <a class="permalink" href="#hdr-A_Practical_Approach_to_CPU_Caches"><h3 id="hdr-A_Practical_Approach_to_CPU_Caches">A Practical Approach to CPU Caches</h3></a>
 <p>
 CPU caches are great! But so is multiprocessing, the technique of having the CPU run multiple
-programs at once to improve computer performance. Each &ldquo;core&rdquo; or CPU thread gets its own L1 cache at
-least, often but not always shares L2 cache with some other threads, and usually shares L3 cache
-with all other threads. The details vary by microarchitecture. Regardless, for the CPU to function,
-each thread needs to be able to see the others&#39; writes to memory.
+programs at once to improve computer performance. Each &ldquo;core&rdquo; or CPU thread gets its own L1 (&ldquo;level
+1&rdquo;) cache at least, often but not always shares L2 cache with some other threads, and usually shares
+L3 cache with all other threads. The details vary by microarchitecture. Regardless, for the CPU to
+function, each thread needs to be able to see the others&#39; writes to memory.
 </p>
 <p>
 But &ldquo;writes to memory&rdquo; are really &ldquo;writes to the thread&#39;s L1 cache&rdquo; so we can get the performance
@@ -413,20 +425,22 @@ according to some metric of sensibility.
 </p>
 <p>
 A protocol like MESI (short for Modified/Exclusive/Shared/Invalid), or one of its many derivatives,
-allows caches to declare which addresses (at the granularity of the cache line size) they&#39;re reading
-from and writing to, visible to each other. They can recognize when they need to push cache lines
-back to main memory or fetch the new state of a cache line therefrom. So, threads that
+allows caches to declare which addresses – at the granularity of the cache line size – they&#39;re
+reading from and writing to, visible to each other. They can recognize when they need to push cache
+lines back to main memory or fetch the new state of a cache line therefrom. So, threads that
 simultaneously read from the same address will always see the same value, and that value will always
 be the present value of the same address in all L1 caches that share it.
 </p>
 <p>
 The only trouble occurs when a read and a write are issued to the same address by separate threads
 simultaneously. Any number of reading threads accessing the location in the same cycle as a writer
-will see the same value, but that value may or may not be the value being written. If, say, the
-readers were checking whether a mutex was locked, perhaps via a CMPXCHG instruction (without a LOCK
-prefix) that will change the value at the address if it currently represents &ldquo;unlocked&rdquo;, then all
-those threads could successfully make the swap and believe they had acquired the mutex. This does
-not sound like mutual exclusion.
+will see the same value, but that value may or may not be the value being written.
+</p>
+<p>
+If, say, the readers were checking whether a mutex was locked, perhaps as part of a CMPXCHG
+instruction (without a LOCK prefix) that will change the value at the address if it currently
+represents &ldquo;unlocked&rdquo;, then all those threads could successfully make the swap and believe they had
+acquired the mutex. This does not sound like mutual exclusion.
 </p>
 <p>
 (For a much better explanation of cache coherency than I can give, see
@@ -437,21 +451,17 @@ not sound like mutual exclusion.
 According to the Intel® 64 and IA-32 Architectures Software Developer&#39;s Manual, Volume 2A, the LOCK
 prefix &ldquo;[i]n a multiprocessor context ... ensures that the processor has exclusive use of any shared
 memory&rdquo; while the instruction to which it is prefixed executes. Which is to say, if another thread
-attempts to access the same cache line, it waits for the write to fully complete. The reading
+attempts to access the same cache line, it waits for the write to fully complete. Our write &ldquo;happens
+before&rdquo; their read – exactly what it means for a computer operation to be atomic. The reading
 thread&#39;s cache can then see that its version of the memory location is no longer valid, so it can
 fetch the value from a deeper cache level or from main memory – the actual slow operation.
 </p>
 <p>
-This is exactly what it means for a computer operation to be atomic. The LOCK prefix creates atomic
-versions of any of the nineteen instructions it can precede, including CMPXCHG, ADD, and XCHG that
-are exposed in package sync/atomic.
-</p>
-<p>
 But there&#39;s a very important detail about all of this: once an atomic operation completes, the
-associated cache line is invalidated only if its contents changed. If the cache line is unchanged,
-then the waiting reader knows its cached value is still valid, so it doesn&#39;t have to fetch a new
-version of the cache line. Which means if a thread tries to acquire an already locked mutex, LOCK
-CMPXCHG will not invalidate anyone&#39;s cache. Only when the mutex state changes are caches
+associated cache line needs to be invalidated only if its contents changed. If the cache line is
+unchanged, then the waiting reader knows its cached value is still valid, so it doesn&#39;t have to
+fetch a new version of the cache line. Which means if a thread tries to acquire an already locked
+mutex, LOCK CMPXCHG will not invalidate anyone&#39;s cache. Only when the mutex state changes are caches
 invalidated. In theory, a thread can spin for a mutex every few CPU cycles, locking it almost the
 moment it becomes available.
 </p>
