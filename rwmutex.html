@@ -23,12 +23,13 @@
 	footer { font-size: small; text-align: center; }
 	footer a, footer a:hover { color: inherit; text-decoration: underline; }
 	footer a:hover { border-bottom: none; }
+	p.date { text-align: right; font-style: italic; opacity: 0.75; font-size: medium; line-height: 1.15; margin-top: -1.15em; }
 </style>
- 
+
 
 	<title>Choosing RWMutex | zephyrtronium</title>
 	<meta property="og:title"       content="Choosing RWMutex"         />
-	<meta property="og:description" content="Maybe you&#39;re converting some old algorithm to be concurrent, and channels feel like an awkward fit." />
+	<meta property="og:description" content="You need to maximize throughput in a concurrent algorithm. Will an RWMutex help?" />
 </head>
 
 <body>
@@ -40,6 +41,11 @@
 
 	<article>
 		<h1>Choosing RWMutex</h1>
+		
+			<p class="date">on 5 May 2020
+			
+			</p>
+		
 		<p>
 Maybe you&#39;re converting some old algorithm to be concurrent, and channels feel like an awkward fit.
 Maybe you&#39;ve profiled your project and found that locking plain mutexes is a big box on the
@@ -356,8 +362,8 @@ take a lot of words, because we are describing some of the deepest magic of hard
 </p>
 <a class="permalink" href="#hdr-Computer__Meet_Physics"><h3 id="hdr-Computer__Meet_Physics">Computer, Meet Physics</h3></a>
 <p>
-A common adage goes something like &ldquo;memory is fast, hard drives are slow, and networks are really
-slow.&rdquo; That&#39;s close to true, but the situation with memory is complicated.
+A common programming adage goes something like &ldquo;memory is fast, hard drives are slow, and networks
+are really slow.&rdquo; That&#39;s close to true, but the situation with memory is complicated.
 </p>
 <p>
 Here&#39;s a simplified description of the steps involved when the CPU needs to access values stored in
@@ -388,8 +394,8 @@ work on that thread.
 One of the primary ways to improve computer performance is to reduce the number of operations which
 have to reach all the way to RAM, by introducing CPU caches. These are chunks of memory located on
 the CPU itself, designed to resolve quickly rather than to pack as much storage as possible onto
-little sticks. Each cache level is a little physically further from the CPU control unit, so it&#39;s a
-little slower, but even the deepest level of cache is orders of magnitude faster than RAM.
+little sticks of silicon. Each cache level is a little physically further from the CPU control unit,
+so it&#39;s a little slower, but even the deepest level of cache is orders of magnitude faster than RAM.
 </p>
 <p>
 Another related innovation is the &ldquo;cache line.&rdquo; On amd64, the machine word size is eight bytes, but
@@ -554,6 +560,9 @@ Just wait until you see my lock-free concurrent trie:
 
 <hr>
 <footer>
+	
+	<p>Thanks to Chris Hinson, Sven Wiltink, and an anonymous reviewer for proofreading this article!</p>
+	
 	<p>
 		My blog is derived from <a href="https://github.com/diamondburned/tblog" target="_blank" rel="noreferrer noopener">diamondburned's tblog</a>, a minimal static blog generator perfect for a systems dev.
 		<br/>
