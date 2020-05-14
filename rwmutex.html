@@ -43,7 +43,7 @@
 		<h1>Choosing RWMutex</h1>
 		
 			<p class="date">on 5 May 2020
-			
+			<br/>updated 14 May 2020
 			</p>
 		
 		<p>
@@ -500,13 +500,48 @@ deeper than L1, and possibly to main memory. That&#39;s dozens of wasted CPU cyc
 Now, on an old dual-core Pentium, cache invalidation isn&#39;t the worst thing. There&#39;s only one other
 thread that has to care about it, and it&#39;ll probably at least synchronize in the L2 cache, only a
 little further away. But on high-end consumer-grade processors with eight, twelve, or sixteen
-threads, it&#39;s... not good. Even stronger, there are plenty of servers with 64 or more cores, where
-benchmarks see as much as 8x time spent on RLock. Cache contention in the RWMutex algorithm creates
-real problems: <a href="https://github.com/golang/go/issues/17973">https://github.com/golang/go/issues/17973</a>.
+threads, or on servers with 64 or more cores, it&#39;s... not good.
+</p>
+<p>
+We still haven&#39;t gotten to the worst-case scenario. Imagine we have four goroutines calling RLock on
+one RWMutex concurrently. Let&#39;s say those goroutines happen to be running in parallel on four
+threads, and each of those threads encounters the atomic add in the same CPU cycle. The situation
+ends up something like this:
+</p>
+<pre>1.	Simultaneously:
+	- T0&#39;s LOCK ADD claims readerCount.
+	- T1&#39;s LOCK ADD cannot claim readerCount. Wait.
+	- T2&#39;s LOCK ADD cannot claim readerCount. Wait.
+	- T3&#39;s LOCK ADD cannot claim readerCount. Wait.
+2.	T0&#39;s LOCK ADD finishes. Simultaneously:
+	- T1&#39;s LOCK ADD finishes waiting and claims readerCount.
+	- T2&#39;s LOCK ADD finishes waiting but cannot claim. Wait again.
+	- T3&#39;s LOCK ADD finishes waiting but cannot claim. Wait again.
+3.	T1&#39;s cache sees that its line containing readerCount is
+	invalid and reads the new value from a deeper cache level.
+4.	T1&#39;s LOCK ADD finishes. Simultaneously:
+	- T2&#39;s LOCK ADD finishes waiting and claims readerCount.
+	- T3&#39;s LOCK ADD finishes waiting again but cannot claim. Wait.
+5.	T2&#39;s cache sees that its line containing readerCount is
+	invalid and reads the new value from a deeper cache level.
+6.	T2&#39;s LOCK ADD finishes.
+7.	T3&#39;s LOCK ADD finishes waiting and can finally run.
+8.	T3&#39;s cache sees that its line containing readerCount is
+	invalid and reads the new value from a deeper cache level.
+9.	T3&#39;s LOCK ADD finishes.
+</pre>
+<p>
+We see the bad cache behavior we were talking about, but there&#39;s a more insidious problem here.
+Ensuring &ldquo;happens before&rdquo; order ends up completely serializing the supposedly parallel operations.
+In the worst-case scenario, the running time of RLock is actually O(readers)! The running time can
+even reach that upper bound on systems with many cores, where the time for a context switch between
+goroutines can be shorter than the time it takes for all threads to finish their atomic additions.
 </p>
 <p>
 Simply put, RWMutex doesn&#39;t scale with CPU count. If more than two threads might be using it even
-just for reading, performance will degrade. The curve isn&#39;t steep, but it is downward.
+just for reading, performance will degrade. The curve isn&#39;t steep, but it is downward. Cache
+contention in the RWMutex algorithm creates real problems:
+<a href="https://github.com/golang/go/issues/17973">https://github.com/golang/go/issues/17973</a>.
 </p>
 <a class="permalink" href="#hdr-RWMutex_Does_Not_Fit"><h3 id="hdr-RWMutex_Does_Not_Fit">RWMutex Does Not Fit</h3></a>
 <p>
