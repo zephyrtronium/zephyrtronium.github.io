@@ -1,76 +1,59 @@
-<!DOCTYPE html>
-<html>
-	
 
+<!DOCTYPE html>
 <head>
 	
-
-<link rel="stylesheet" href="https://unpkg.com/sakura.css/css/normalize.css" type="text/css">
-<link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css" type="text/css">
-
+<link rel="stylesheet" href="/style/normalize.css" type="text/css">
+<link rel="stylesheet" href="/style/sakura.css" type="text/css">
 <meta property="og:site_name" content="zephyrtronium" />
-
-
 <meta name="viewport" content="width=device-width, initial-scale=1.2">
-
 <style>
-	body { background-color: #eef4ee; }
+	body { background-color: #eef4ee; max-width: 40em; }
 	a { color: #2b7c00; }
 	a:hover { color: #50b92d; }
+	a:visited { color: #2b7c00; }
 	a.permalink { color: inherit; }
 	a.permalink:hover { text-decoration: underline; }
-	pre { tab-size: 4; font-size: small; background-color: #d5e7cf; }
+	pre { tab-size: 4; font-size: medium; background-color: #d5e7cf; }
+	code { padding: 0 0.125em; background-color: #eef4ee; }
+	li { margin-bottom: 0; }
+	li>ul { margin-bottom: 0; }
+	li>ol { margin-bottom: 0; }
 	footer { font-size: small; text-align: center; }
 	footer a, footer a:hover { color: inherit; text-decoration: underline; }
 	footer a:hover { border-bottom: none; }
 	p.date { text-align: right; font-style: italic; opacity: 0.75; font-size: medium; line-height: 1.15; margin-top: -1.15em; }
 </style>
 
-
 	<title>zephyrtronium</title>
-	<meta property="og:title"       content="Homepage"            />
+	<meta property="og:title" content="Homepage | zephyrtronium" />
 	<meta property="og:description" content="
-	I'm Branden. Currently a student in computer science, mathematics, and Chinese language and culture at the University of Pittsburgh. Formerly a signal analyst in the United States Air Force. I love learning and helping people learn.
+I'm Branden. Currently a student in computer science at the University of Pittsburgh. Formerly a signal analyst in the United States Air Force. I love learning and helping people learn.
 " />
 </head>
-
 <body>
 	<header>
 		<h1>zephyrtronium</h1>
 		<p>
-	I'm Branden. Currently a student in computer science, mathematics, and Chinese language and culture at the University of Pittsburgh. Formerly a signal analyst in the United States Air Force. I love learning and helping people learn.
+I'm Branden. Currently a student in computer science at the University of Pittsburgh. Formerly a signal analyst in the United States Air Force. I love learning and helping people learn.
 </p>
 	</header>
-	
 	<main>
-		
-		<section id="14May2020">
-			<h3>14 May 2020</h3>
-			<ul>
-				
-				<li><a id="rwmutex" href="rwmutex.html">Choosing RWMutex</a></li>
-				
-			</ul>
-		</section>
-	
+		<h3>High-Performance Go</h3>
+		<ul>
+			<li><a href="articles/rwmutex.html">Choosing RWMutex</a> (24 Mar 2021) &mdash; You need to maximize throughput in a concurrent algorithm. Will an RWMutex help?</li>
+		</ul>
 	</main>
 </body>
 
-
 <hr>
 <footer>
-	
 	<p>
-		My blog is derived from <a href="https://github.com/diamondburned/tblog" target="_blank" rel="noreferrer noopener">diamondburned's tblog</a>, a minimal static blog generator perfect for a systems dev.
+	
+		My blog uses <a href="https://github.com/oxalorg/sakura" target="_blank" rel="noreferrer noopener">sakura</a>, a classless CSS framework.
 		<br/>
-		It uses <a href="https://github.com/oxalorg/sakura" target="_blank" rel="noreferrer noopener">sakura</a>, a classless CSS framework.
-		<br/>
-		Except as otherwise indicated, all content is Copyright 2020 Branden J Brown and is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
+		Except as otherwise indicated, all content is Copyright 2021 Branden J Brown and is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
 		<br/>
 		<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>
 	</p>
 </footer>
 
-
-
-</html>
