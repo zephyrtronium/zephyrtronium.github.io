@@ -21,6 +21,16 @@
 	footer a, footer a:hover { color: inherit; text-decoration: underline; }
 	footer a:hover { border-bottom: none; }
 	p.date { text-align: right; font-style: italic; opacity: 0.75; font-size: medium; line-height: 1.15; margin-top: -1.15em; }
+
+@media (prefers-color-scheme: dark) {
+	body { background-color: #121212; color: #eef4ee; }
+	a { color: #7dbe67; }
+	a:hover { color: #40aa1d; }
+	a:visited { color: #7dbe67; }
+	a.permalink { color: inherit; }
+	pre { background-color: #121610; }
+	code { background-color: #121212; }
+}
 </style>
 
 
@@ -39,7 +49,7 @@
 			<p class="date">on Wed, 24 Mar 2021</p>
 		
 		
-<a href="#1."><h2 id="1.">Introduction</h1></a>
+<a class="permalink" href="#1."><h2 id="1.">Introduction</h1></a>
 <p>Maybe you're converting some old algorithm to be concurrent, and channels feel like an awkward fit.
 Maybe you've profiled your project and found that locking plain mutexes is a big box on the cumulative call graph.
 Maybe you like to read through Go documentation when you're bored (ha ha, who would do that!) and you keep thinking about the delicacy that is package sync.
@@ -51,7 +61,7 @@ Regardless of what brought you to this point, you want to know whether RWMutex i
 <p>The code snippets in this post are derived directly from the source code of package sync <a href="https://github.com/golang/go/tree/release-branch.go1.16/src/sync" target="_blank" rel="noopener">available on GitHub</a>. In general, I will be removing lines of code specific to the race detector.</p>
 
 
-<a href="#2."><h2 id="2.">Atomic Operations</h1></a>
+<a class="permalink" href="#2."><h2 id="2.">Atomic Operations</h1></a>
 <p>RWMutex is a synchronization primitive, a building block for larger algorithms that allow programs with concurrent execution to have consistent behavior. Mutex is another synchronization primitive. So are channels.</p>
 <p>The most basic type of synchronization primitive is the atomic operation. These are single statements that are implemented by the compiler in a special way to ensure that any other atomic operation (which wasn't in the past) on the same variable will always observe the result of the current one. To use the language of the Go memory model, atomic operations are always strictly in <em>happens before</em> order – they never <em>happen concurrently</em>. Ironically, if an algorithm has no operations that <em>happen concurrently</em> with a write, we say the algorithm is &quot;concurrent.&quot;</p>
 <p>Arguably the most important atomic operation is the atomic compare-and-swap, or CAS. It does what its name suggests: swap the value of a variable for a new one if and only if it is instantaneously equal to some other given value, and indicate to the processor whether the swap happened. x86 has a special instruction to implement it: <code>LOCK CMPXCHG</code>. (<code>LOCK</code> is an instruction prefix, essentially the x86 name for &quot;atomic.&quot; More on it later.) The details of how assembly instructions map to CPU cycles are complicated, but a decent analogy would be that if this were Python or Javascript instead of machine code, there would be a built-in function for CAS.</p>
@@ -59,7 +69,7 @@ Regardless of what brought you to this point, you want to know whether RWMutex i
 <p>&quot;Atomic&quot; has a double meaning. I've been talking about how they're like indivisible operations in concurrent algorithms, but they also serve as the most basic, fundamental pieces of larger algorithms like mutexes and semaphores (which are like mutexes that can be locked a chosen number of times at once), all the way up to highly versatile data structures like <code>sync.Map</code>. We're going to see a lot of atomic operations as we tour through Mutex and RWMutex, and they're going to be constantly in the background of our analysis of the performance of those types.</p>
 
 
-<a href="#3."><h2 id="3.">Mutex</h1></a>
+<a class="permalink" href="#3."><h2 id="3.">Mutex</h1></a>
 <p>For more context, let's look at the plain sync.Mutex:</p>
 <pre><code>type Mutex struct {
     state int32
@@ -118,7 +128,7 @@ func (m *Mutex) unlockSlow(new int32) {
 </ul>
 
 
-<a href="#4."><h2 id="4.">RWMutex</h1></a>
+<a class="permalink" href="#4."><h2 id="4.">RWMutex</h1></a>
 <p>Now that we know what Mutex looks like, let's look at RWMutex.</p>
 <pre><code>type RWMutex struct {
     w           Mutex  // held if there are pending writers
@@ -235,7 +245,7 @@ func (rw *RWMutex) Unlock() {
 <p>This will take a lot of words, because we are describing some of the deepest magic of hardware.</p>
 
 
-<a href="#5."><h2 id="5.">Computer, Meet Physics</h1></a>
+<a class="permalink" href="#5."><h2 id="5.">Computer, Meet Physics</h1></a>
 <p>A common programming adage goes something like, &quot;Memory is fast, hard drives are slow, and networks are really slow.&quot; That's usually true, but the situation with memory is complicated.</p>
 <p>Here's a simplified description of the steps involved when the CPU needs to access values stored in RAM:</p>
 <ol>
@@ -254,7 +264,7 @@ func (rw *RWMutex) Unlock() {
 <p>(The cache line size was 64 btes on most 32-bit x86 microarchitectures as well, making them sixteen machine words there. Note that I do say <em>microarchitectures</em>, i.e. the specific processor model; cache line sizes are not specified in the instruction set architecture and are allowed to differ between machines.)</p>
 
 
-<a href="#6."><h2 id="6.">A Practical Approach to CPU Caches</h1></a>
+<a class="permalink" href="#6."><h2 id="6.">A Practical Approach to CPU Caches</h1></a>
 <p>CPU caches are great! But so is multiprocessing, the technique of having the CPU run multiple programs at once to improve computer performance. Each &quot;core,&quot; or CPU thread, gets its own L1 (&quot;level 1&quot;) cache at least, often but not always shares L2 cache with some other threads, and usually shares L3 cache with all other threads. The details vary by microarchitecture. Regardless, for the CPU to function, each thread needs to be able to see the others' writes to memory.</p>
 <p>But &quot;writes to memory&quot; are really &quot;writes to the thread's L1 cache&quot; so that we can get the performance gains we've been talking about. How can another thread, with its own L1 cache, see that write?</p>
 <p>Many experienced programmers will tell you that in a situation where one thread reads from memory another has modified without a synchronization point between them, the read can return anything, including garbage. Such a statement is well-intended, but ultimately false. The real answer is that the CPU implements a cache coherency protocol to ensure that the reads always &quot;make sense,&quot; according to some metric of sensibility.</p>
@@ -264,14 +274,14 @@ func (rw *RWMutex) Unlock() {
 <p>(Rajiv Prabhakar has an excellent <a href="https://software.rajivprab.com/2018/04/29/myths-programmers-believe-about-cpu-caches/" target="_blank" rel="noopener">explanation of cache coherency</a>, if you're interested in more of these details.)</p>
 
 
-<a href="#7."><h2 id="7."><code>LOCK</code> and Cache</h1></a>
+<a class="permalink" href="#7."><h2 id="7."><code>LOCK</code> and Cache</h1></a>
 <p>According to the Intel® 64 and IA-32 Architectures Software Developer's Manual, Volume 2A, the <code>LOCK</code> prefix &quot;[i]n a multiprocessor context ... ensures that the processor has exclusive use of any shared memory&quot; while the instruction to which it is prefixed executes. Which is to say, if another thread attempts to access the same cache line, it waits for the write to fully complete. Our write <em>happens before</em> their read – exactly what it means for a computer operation to be atomic. The reading thread's cache can then see that its version of the memory location is no longer valid, so it can fetch the value from a deeper cache level.</p>
 <p>But there are a few important details about this. First, the name is <code>LOCK</code> <em>for a reason</em>. While one thread has &quot;exclusive use&quot; of a cache line, any others that want to use it have to stall, doing nothing until the privileged thread is done. If every core happens to try to atomically access the same variable at once, they have to wait in turn. Their otherwise parallel execution ends up being completely serialized – we aren't multiprocessing anymore!</p>
 <p>Second, a somewhat subtler detail: once an atomic operation completes, the associated cache line needs to be invalidated <em>only if its contents changed</em>. If the cache line is unchanged, then the waiting reader knows its cached value is still valid, so it doesn't have to fetch a new version of the cache line. Which means if a thread tries to acquire an already locked mutex, <code>LOCK CMPXCHG</code> will not invalidate anyone's cache. Only when the mutex state changes are caches invalidated. In theory, a thread can spin for a mutex every few CPU cycles, locking it almost the moment it becomes available.</p>
 <p>On the other hand, other atomic operations might always cause a cache line to invalidate. One example is <code>LOCK ADD</code> with a nonzero addend. Remember, &quot;<code>LOCK</code>&quot; is equivalent to &quot;atomic.&quot; This is an operation we've seen before.</p>
 
 
-<a href="#8."><h2 id="8.">RWMutex Does Not Scale</h1></a>
+<a class="permalink" href="#8."><h2 id="8.">RWMutex Does Not Scale</h1></a>
 <p>We've finally brought the discussion back to RWMutex itself, but now we are armed with a conceptual understanding of The Caches. It was a long time ago at this point, but we once made the claim that <code>RWMutex.RLock</code> might be faster than <code>Mutex.Lock</code>. Recall its implementation:</p>
 <pre><code>func (rw *RWMutex) RLock() {
     if atomic.AddInt32(&amp;rw.readerCount, 1) &lt; 0 {
@@ -317,14 +327,14 @@ func (rw *RWMutex) Unlock() {
 <p>Simply put, RWMutex doesn't scale with CPU count. If more than two threads might be using it even just for reading, performance will degrade. The curve isn't steep, but it is downward. Cache contention in the RWMutex algorithm <a href="https://golang.org/issue/17973" target="_blank" rel="noopener">creates real problems</a>.</p>
 
 
-<a href="#9."><h2 id="9.">RWMutex Does Not Fit</h1></a>
+<a class="permalink" href="#9."><h2 id="9.">RWMutex Does Not Fit</h1></a>
 <p>There is another core problem with the design of RWMutex. I've alluded to it, and it's possible you might have extrapolated some of the discussion to notice it, but now we'll consider it explicitly.</p>
 <p>The cache line size for all amd64 processors is (or has been) 64 bytes. An RWMutex takes up 24 bytes. That's 37.5% of a cache line on its own. Memory fetches are granular at the cache line size, so the fact that an RWMutex takes up more than a third of that means that it's very likely the cache will have to issue an extra fetch to retrieve whatever data you're using the mutex to guard.</p>
 <p>Now, this problem has much more nuance than the scaling issue. It's actually possible for the large size of the RWMutex to push unrelated data into uncontended cache lines, meaning the overall program performance might even improve! Once again, the only way to be sure is to benchmark and profile.</p>
 <p>Generally speaking, though, for nice cache behavior, small objects are best. RWMutex will probably work against you more often than with you in this regard.</p>
 
 
-<a href="#10."><h2 id="10.">So You Think You Want RWMutex</h1></a>
+<a class="permalink" href="#10."><h2 id="10.">So You Think You Want RWMutex</h1></a>
 <p>Maybe you're converting some old algorithm to be concurrent, and channels feel like an awkward fit.
 Maybe you've profiled your project and found that locking plain mutexes is a big box on the cumulative call graph.
 Maybe you like to read through Go documentation, and you keep thinking about package sync.
