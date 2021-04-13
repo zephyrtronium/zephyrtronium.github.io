@@ -1,7 +1,7 @@
 
 body { background-color: #d8e0d8; max-width: 44em; }
 main { padding: 0 2em; }
-article { background-color: #eef4ee; padding: 0.01px 2em; }
+article { background-color: #eef4ee; padding: 1px 2em; }
 a { color: #2b7c00; }
 a:hover { color: #50b92d; }
 a:visited { color: #2b7c00; }
