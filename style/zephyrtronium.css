@@ -1,6 +1,7 @@
 
-body { background-color: #d8e0d8; max-width: 44em; }
-main { padding: 0 2em; }
+body { background-color: #d8e0d8; }
+body.not-giscus { max-width: 44em; }
+main.not-giscus { padding: 0 2em; }
 article { background-color: #eef4ee; padding: 1px 2em; }
 a { color: #2b7c00; }
 a:hover { color: #50b92d; }
