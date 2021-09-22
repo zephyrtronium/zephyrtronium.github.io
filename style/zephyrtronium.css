@@ -31,3 +31,7 @@ hr { border-color: #2b7c00; }
 	pre { background-color: #1a2018; }
 	code { background-color: #1a2018; }
 }
+
+.giscus {
+	margin-top: 1em;
+}
