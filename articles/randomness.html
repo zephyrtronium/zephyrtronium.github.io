@@ -70,7 +70,7 @@ MT revolutionized PRNG techniques in computing, and today if you ask for random 
 It has other parameter sets that make it uniform all the way up to 6752 consecutive outputs.</p>
 <p>Technically, MT is k-distributed to 32-bit accuracy rather than equidistributed, i.e. perfectly uniform.
 Among some other slight differences, that means the all-zero group of each size appears once less often than the others in the overall sequence.
-But MT19937 has a period of 2^19937-1, and the total count of groups is itself a number with over six thousand digits, so you'll never notice the difference.</p>
+But MT19937 has a period of 2<sup>19937</sup>-1, and the total count of groups is itself a number with over six thousand digits, so you'll never notice the difference.</p>
 <p>Thing is, in some contexts like GPU where you want potentially several thousand threads to use random numbers, 19937 bits isn't trivial.</p>
 <p>Furthermore, once you exceed that uniformity number, you lose it entirely.
 Most groups of 624 numbers never appear in the MT19937 sequence at all.</p>
@@ -89,7 +89,7 @@ Or, any secure block cipher in CTR mode; AES also qualifies.
 ChaCha20 in particular is used in emerging web protocols like WireGuard and SPDY, and it's the underlying technique in modern Linux's <code>/dev/urandom</code> and most BSDs' <code>/dev/random</code>.</p>
 <p>ChaCha20 is unbroken; there is no known way to reduce the average number of computations required to figure out its internal state versus just guessing every possibility.
 (This is also a reason ChaCha20 is kind of more state of the art than AES, which is very slightly broken in theory, although still taking some exponent of the age of the universe to actually do it.)
-That means it takes on the order of 2^256 attempts – a number with 77 digits – to figure out its internal state.</p>
+That means it takes on the order of 2<sup>256</sup> attempts – a number with 77 digits – to figure out its internal state.</p>
 <p>The problem with ChaCha20 as a PRNG is that you don't need 256 bits of security to see whether Shadowheart passes a DC 14 diplomacy check.
 It's just heavier than what you need when you aren't actually doing cryptography.</p>
 <p>Partly for that reason, math/rand/v2 includes ChaCha8 rather than ChaCha20.
@@ -99,7 +99,7 @@ Overall, ChaCha8 is very fast.</p>
 <p>Both ChaCha20 and ChaCha8 are still relatively large, though, weighing in at 304 bytes.
 More manageable than MT, but not trivial either.
 And compared to MT, its smaller state directly implies lower uniformity as a consequence of information entropy.
-E.g., if you observe that the same bit is 0 in 256 consecutive outputs from ChaCha8 (which, in fairness, happens with probability 1/2^250), you know it will be 1 in the next output.
+E.g., if you observe that the same bit is 0 in 256 consecutive outputs from ChaCha8 (which, in fairness, happens with probability 1/2<sup>250</sup>), you know it will be 1 in the next output.
 As covered before, MT can produce up to 623 consecutive 0s.</p>
 
 
@@ -132,7 +132,7 @@ Here's a heavily abbreviated list of PRNGs advertising speed with associated pub
 <li>LFG(273, 607), which is the PRNG that today's math/rand gives you in a NewSource(), but which has a large state and probably the worst statistical quality on this list.</li>
 </ul>
 <p>An interesting note is that every generator after wyrand on this list is fundamentally based on the same idea in mathematics: linear recurrences in finite fields.
-Basically, they're taking some carefully designed matrix <code>A</code>, a carefully chosen function <code>T</code>, and starting point <code>x</code> to compute the nth term of the PRNG sequence as <code>T(A^n x)</code>.
+Basically, they're taking some carefully designed matrix <code>A</code>, a carefully chosen function <code>T</code>, and starting point <code>x</code> to compute the nth term of the PRNG sequence as <code>T(Aⁿ x)</code>.
 PCG isn't far from the same idea.
 The fact that all of these generators are so similar is exactly why we know their uniformity properties, and why I describe wyrand – the only one here <em>not</em> based on this technique – as &quot;not well understood.&quot;</p>
 <p>That's also why, with some exceptions, most of these generators share a few traits.</p>
@@ -146,7 +146,7 @@ The choices are easy to implement on computers in terms of operations that are m
 But that simplicity and ease of implementation makes them more predictable, i.e. not cryptographically secure; usually you can take just a few outputs and figure out their internal states.</p>
 <p>Another consequence of being based on similar math and having small states is that most of these generators share an operation called &quot;jump.&quot;
 Consider that the fundamental operation all of them are doing is repeatedly multiplying a matrix <code>A</code>.
-Advancing by 2 steps abstractly-multiplies the starting point by <code>A^2</code>. Advancing by 2^64 steps multiplies the starting point by <code>A^2^64</code>.</p>
+Advancing by 2 steps abstractly-multiplies the starting point by <code>A</code><sup>2</sup>. Advancing by 2<sup>64</sup> steps multiplies the starting point by <code>A</code><sup>2<sup>64</sup></sup>.</p>
 <p>Since these longer jumps just exponentiate the matrix, you can use an algorithm like exponentiation by squaring to advance arbitrarily far in time proportional to the size of the state rather than the length of the jump.
 This helps with the &quot;thousands of threads want independent sequences&quot; situation.
 Seeding many PRNGs independently leaves you vulnerable to the birthday problem, especially because we're concerned about overlapping spans rather than exact matches.
