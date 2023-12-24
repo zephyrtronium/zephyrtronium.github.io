@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<head>
+	
+<link rel="stylesheet" href="/style/normalize.css" type="text/css">
+<link rel="stylesheet" href="/style/sakura.css" type="text/css">
+<link rel="stylesheet" href="/style/zephyrtronium.css" type="text/css">
+<meta property="og:site_name" content="zephyrtronium" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+	<title>JSON Constructors | zephyrtronium</title>
+	<meta property="og:title" content="JSON Constructors" />
+	<meta property="og:description" content="Combining some obscure features of Go lets us ensure we never decode invalid objects, keeping our APIs and systems safe." />
+</head>
+<body>
+	<header>
+		<h3><a href="/">zephyrtronium</a></h3>
+	</header>
+	<hr>
+	<article>
+		<h1>JSON Constructors</h1>
+		
+		<div class="subtitle">
+			<p class="chapter">in Type Techniques</p>
+			<p class="date">on Sat, 23 Dec 2023</p>
+		</div>
+		
+		
+<a class="permalink" href="#1."><h2 id="1.">Parse, And Validate</h2></a>
+<p>In essence, this article is about this method:</p>
+<pre><code>func (b *Bocchi) UnmarshalJSON(p []byte) error {
+    type T Bocchi
+    v := T(*b)
+    if err := json.Unmarshal(p, &amp;v); err != nil {
+        return err
+    }
+    *b = Bocchi(v)
+    return nil
+}
+</code></pre>
+<p>We are going to use this to apply the <a href="https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/" target="_blank" rel="noopener">&quot;parse, don't validate&quot;</a> rule.
+The core idea of that rule is to make it impossible to represent illegal states by leveraging a powerful type system like Haskell's or TypeScript's to force proof of validity on an API's user.
+Go's sparsity of type-level features tends to make statements involving &quot;proof&quot; difficult, but we can still fulfill the spirit of the rule for reasonable scenarios.</p>
+<p>&quot;Parse, don't validate&quot; is ultimately about <em>constructors</em>.
+That probably sounds like a term straight out of object-oriented programming, but really it's a borrowed word there as well.
+More broadly, a type's constructors are the routines which produce values of that type.
+Having every constructor enforce all invariants before you can ever touch a value of that type is the core idea of the &quot;proof&quot; I'm talking about.</p>
+<p>In this case, UnmarshalJSON acts as our constructor.
+Technically, it takes in an existing value – the receiver – and so that value has already been constructed.
+However, if the purpose of the type is to define a layout for JSON interchange, then it's pretty likely that any values we see will either be produced internally or pass through a round of <code>json.Unmarshal</code> (or some other JSON decoder).</p>
+<p>A minor note on spelling:
+American and British English have different ideas of the number of 'l's in formations with words like &quot;unmarshal.&quot;
+I will use a convention that I remember reading somewhere but can no longer locate to cite.
+When the /l/ sound separates syllables, like in &quot;unmarshalling,&quot; I will double it in spelling.
+When it doesn't, like in &quot;unmarshal&quot; or &quot;unmarshaled,&quot; I will not.
+The exception is <code>Unmarshaler</code>, which has a specific spelling as a name in source code.
+I will also pronounce &quot;JSON&quot; as /ˌd͡ʒeˈsɔn/ similar to &quot;jay song,&quot; not as /ˈd͡ʒeˌsɪn/ like the name &quot;Jason.&quot; Just so you know.</p>
+
+
+<a class="permalink" href="#2."><h2 id="2.">Elementary JSON In Go</h2></a>
+<p>First, some background.
+Go's standard library <code>encoding/json</code> package implements a long list of what I'll call <em>default unmarshalling rules</em>.
+These are the rules describing how the package unmarshals simple types that don't implement certain interfaces for custom behavior.
+Most of the rules are more or less irrelevant for this article, in the sense that the technique works in combination with… most of them.</p>
+<p>Default unmarshalling rules ultimately exist for convenience.
+But that means it is usually most convenient to take advantage of them.
+It's much less work to add <code>`json:&quot;bocchi,omitempty&quot;`</code> to a struct field definition than to implement the precise rules for marshalling and unmarshalling that field along with every other field in the struct, especially if the type's fields change over time.</p>
+<p>There are two unmarshalling rules that implement <em>non-default</em> behavior.
+These check for types implementing either <code>json.Unmarshaler</code> or <code>encoding.TextUnmarshaler</code>.
+The former is the one that we particularly care about for this article.</p>
+<p>If we have a <code>type Bocchi ...</code> and we define a <code>func (b *Bocchi) UnmarshalJSON(p []byte) error</code>, the JSON decoder will call that method with corresponding JSON text and tell it to take care of itself.
+This is what allows us to treat that method as a roughly-speaking constructor: any time it's the target of unmarshalling, even if it's inside another type, we get that method call.</p>
+<p>But using <code>UnmarshalJSON</code> means we have to implement everything about unmarshaling manually, including for nested fields.
+We were just talking about how convenient the default rules are; are we giving that up to implement custom logic?</p>
+
+
+<a class="permalink" href="#3."><h2 id="3.">Local Types</h2></a>
+<p>Let's revisit the particular <code>UnmarshalJSON</code> method that is our subject, and make the example a bit more concrete.</p>
+<pre><code>type Bocchi struct {
+    Band string `json:&quot;band&quot;`
+}
+
+func (b *Bocchi) UnmarshalJSON(p []byte) error {
+    type T Bocchi
+    v := T(*b)
+    if err := json.Unmarshal(p, &amp;v); err != nil {
+        return err
+    }
+    *b = Bocchi(v)
+    return nil
+}
+</code></pre>
+<p>The first line of this method is probably a bit odd to you.
+It's a type declaration.
+Inside a function.</p>
+<p>There isn't actually a name for this.
+By the Go spec, it's just a declaration statement.
+It has all the same rules regarding scope as any other declaration statement.
+Basically the same as a <code>const</code> declaration, just with a different kind of thing being created.</p>
+<p>I call the <code>T</code> we're creating a <em>local type</em>.
+It's literally local to the function it's in, unlike package-level type declarations which are available to all functions.
+And other than scope, there is nothing at all special about local types.
+In fact, we don't even need a local type to do the interesting part of this technique, it just helps keep things clean.</p>
+<p>The important thing about the local type declaration is that we have created a new <em>defined type</em>.
+<code>T</code> has none of the methods defined on <code>Bocchi</code> (and respectively <code>*T</code> of <code>*Bocchi</code>), as in any type declaration.
+Most importantly, that includes <code>UnmarshalJSON</code> itself.</p>
+<p>Now if we create a <code>T</code>, we can unmarshal into that <em>without</em> <code>Bocchi.UnmarshalJSON</code>, i.e. using default unmarshalling rules.
+We've restored convenience to our custom logic.</p>
+
+
+<a class="permalink" href="#4."><h2 id="4.">Why Tho</h2></a>
+<p>We have this neat technique. How are we gonna use it?</p>
+<p>Well, I said at the start that we'll apply the &quot;parse, don't validate&quot; rule.
+So, of course, what we're going to do is validate.</p>
+<p>Let's say that a <code>Bocchi</code> requires its <code>Band</code> field to be non-empty but no longer than fifty bytes.
+Now that we have a custom implementation of default unmarshalling rules, we can extend it with these checks almost trivially.</p>
+<p>There are many approaches to validation in Go.
+Here I will impart another of my secret techniques, this time for explicit, type-safe, efficient validation.</p>
+<pre><code>func (b *Bocchi) UnmarshalJSON(p []byte) error {
+    type T Bocchi
+    v := T(*b)
+    if err := json.Unmarshal(p, &amp;v); err != nil {
+        return err
+    }
+    vals := []struct {
+        ok bool
+        err string
+    }{
+        {v.Band != &quot;&quot;, &quot;missing band&quot;},
+        {len(v.Band) &lt;= 50, &quot;band too long&quot;},
+    }
+    for _, c := range vals {
+        if !c.ok {
+            return errors.New(c.err)
+        }
+    }
+    *b = Bocchi(v)
+    return nil
+}
+</code></pre>
+<p>Aside: We've been decoding using a temporary of type <code>T</code> instead of directly into the receiver so that we can delay filling its fields until after validation.
+That way we don't yield an unvalidated result, even if it is accompanied by an error.
+If we're really not concerned with that, we can <code>json.Unmarshal(p, (*T)(b))</code> instead.</p>
+<p>This time, we introduce an anonymous type to hold validation results alongside the error messages for when they fail.
+Everything is inline, and it's just code.
+Unlike certain popular validation packages based on struct tags, it's impossible to write a nonsense validation; everything is type checked.</p>
+<p>We can, of course, introduce whatever other checks we want in this pattern.
+Requiring all lower case, or all digits, or a valid domain name, or whatever else becomes just a matter of writing a predicate.</p>
+<p>The advantage we've obtained is that any time an invalid <code>Bocchi</code> comes to us through JSON, just <em>unmarshalling</em> it results in an error.
+As long as we check the error from <code>json.Unmarshal</code> (or <code>json.Decoder.Decode</code>, as it were), we always have a guarantee that the <code>Bocchi</code>s we hold are in a valid state, wherever they may occur.</p>
+<p>Even if the JSON we got them from had them nested deep in objects and arrays that we don't specially check, possibly defined in other packages we don't control, validation has become a part of the construction of a <code>Bocchi</code>, so our <code>Bocchi</code>s are always constructed safely.</p>
+<p>And there are other things we can do using the local type technique.
+For example, we could normalize phone numbers, or derive fields that don't come from JSON.
+Anything that needs to happen as part of a constructor – in the OOP sense or otherwise – can go here.</p>
+
+
+<a class="permalink" href="#5."><h2 id="5.">Caveat: The Local Type With Methods</h2></a>
+<p>One concern with this technique.</p>
+<p>A defined type does not inherit any of the methods of its underlying type, but there is still one way to create a local type that has methods.
+This happens when the underlying type is a struct type that contains embedded fields:</p>
+<pre><code>type KessokuBand struct {
+    Bocchi
+    Ryou
+}
+</code></pre>
+<p>All methods and fields attached to either <code>Bocchi</code> or <code>Ryou</code> – but not both – are <em>promoted</em> and available directly on <code>KessokuBand</code> as well.
+Promotion is essentially a syntactic shortcut that acts as if we're accessing the name on the embedded field instead.
+However, it also makes <code>KessokuBand</code> implement any interface that either <code>Bocchi</code> or <code>Ryou</code> implements, as long as the other doesn't interfere with promotion of the relevant methods.
+The interface's methods dispatch dynamically to the embedded field itself, <em>not</em> to <code>KessokuBand</code> – embedding is <strong>not</strong> inheritance.</p>
+<p>Here's the thing, though: if we use the local type trick with <code>KessokuBand</code>, it still keeps methods promoted from embedded fields!</p>
+<pre><code>func (k *KessokuBand) UnmarshalJSON(p []byte) error {
+    // INCORRECT IMPLEMENTATION
+    type T KessokuBand
+    v := T(*k)
+    if err := json.Unmarshal(p, &amp;v); err != nil {
+        return err
+    }
+    *k = KessokuBand(v)
+    return nil
+}
+</code></pre>
+<p>If <code>Bocchi</code> implements <code>json.Unmarshaler</code>, then so does this local <code>T</code>.
+But the <code>UnmarshalJSON</code> that gets called <em>only operates on the <code>Bocchi</code> field</em>.
+<code>Ryou</code> is entirely ignored!</p>
+<p>That's assuming <code>Ryou</code> itself doesn't also implement <code>json.Unmarshaler</code>, though.
+If it does, then <code>Bocchi</code>'s <code>UnmarshalJSON</code> is not promoted, and the local <code>T</code> no longer gets the method either.
+But it still doesn't quite do what we want with default unmarshalling rules.</p>
+<p>When a struct type contains embedded fields, default unmarshalling rules act as if the type's promoted fields are in the containing type itself.
+This can often be a convenient way to &quot;inline&quot; struct types in each others' JSON representations.
+However, it does come with one downside: the decoder <a href="https://github.com/golang/go/issues/64847" target="_blank" rel="noopener">ignores embedded fields' UnmarshalJSON methods</a>.
+We lose our validation logic.</p>
+<p>In the multiple embedded <code>Unmarshaler</code> case, even if <code>KessokuBand</code> itself doesn't need any additional logic, we need to implement an <code>UnmarshalJSON</code> along these lines:</p>
+<pre><code>func (k *KessokuBand) UnmarshalJSON(p []byte) error {
+    if err := k.Bocchi.UnmarshalJSON(p); err != nil {
+        return err
+    }
+    if err := k.Ryou.UnmarshalJSON(p); err != nil {
+        return err
+    }
+    return nil
+}
+</code></pre>
+
+
+<a class="permalink" href="#6."><h2 id="6.">The Other Custom</h2></a>
+<p>There's one other issue with applying the local type technique.
+We've removed <em>all</em> methods defined on <code>Bocchi</code>, and that includes <code>UnmarshalText</code>, if it has that.
+That means any special unmarshalling logic that <code>Bocchi</code> has as a <code>TextUnmarshaler</code> is overridden when it comes through JSON.</p>
+<p>Fortunately, since we aren't trying to be generic (in fact, this technique doesn't work with generics!) it's easy to work around this.
+Indeed, given that we have an <code>UnmarshalText</code>, we don't need to worry about a local type at all.
+We can just call <code>UnmarshalText</code> ourselves.</p>
+<pre><code>func (b *Bocchi) UnmarshalJSON(p []byte) error {
+    var s string
+    if err := json.Unmarshal(p, &amp;s); err != nil {
+        return err
+    }
+    return b.UnmarshalText([]byte(s))
+}
+</code></pre>
+<p>We have to be careful to decode the JSON message we get as a string first to satisfy <code>UnmarshalText</code>'s contract.
+Otherwise it's easy enough.
+And we can, of course, continue adding validation logic here.</p>
+<p>Although, arguably, if we have <code>UnmarshalText</code>, then we probably shouldn't have <code>UnmarshalJSON</code>.
+We can always do validation there instead, and it keeps us to fewer entry points.</p>
+
+
+<a class="permalink" href="#7."><h2 id="7.">Parse, Don&#39;t Validate</h2></a>
+<p>We've now given <code>Bocchi</code> a proper constructor.
+Of course, this is just a template of a technique.
+We may still want validation in a separate method, or to use some other validation approach.
+Whatever works.</p>
+<p>We're using some obscure features of Go's type system, but at the type level, everything is simple and straightforward.
+(Except for the embedded type scenario, I guess.)
+What we've achieved is an important insight in programming language theory: safe construction.</p>
+
+
+	</article>
+	<script src="https://giscus.app/client.js"
+		data-repo="zephyrtronium/zephyrtronium.github.io"
+		data-repo-id="MDEwOlJlcG9zaXRvcnkyNjEwNDIxNTQ="
+		data-category="Announcements"
+		data-category-id="DIC_kwDOD48v6s4B_JuI"
+		data-mapping="og:title"
+		data-reactions-enabled="1"
+		data-emit-metadata="0"
+		data-theme="https://zephyrtronium.github.io/style/giscus.css"
+		crossorigin="anonymous"
+		async>
+	</script>
+	
+<hr>
+<footer>
+	<p>
+	
+	Tagged: go, validation, types<br/>
+	
+		My blog uses <a href="https://github.com/oxalorg/sakura" target="_blank" rel="noreferrer noopener">sakura</a>, a classless CSS framework.
+		<br/>
+		Except as otherwise indicated, all content is Copyright 2023 Branden J Brown and is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
+		<br/>
+		<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>
+	</p>
+</footer>
+
+</body>
