@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<head>
+	
+<link rel="stylesheet" href="/style/normalize.css" type="text/css">
+<link rel="stylesheet" href="/style/sakura.css" type="text/css">
+<link rel="stylesheet" href="/style/zephyrtronium.css" type="text/css">
+<meta property="og:site_name" content="zephyrtronium" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+	<title>Bocchi the Example! | zephyrtronium</title>
+	<meta property="og:title" content="Bocchi the Example!" />
+	<meta property="og:description" content="Unfoo your bar, baz." />
+</head>
+<body>
+	<header>
+		<h3><a href="/">zephyrtronium</a></h3>
+	</header>
+	<hr>
+	<article>
+		<h1>Bocchi the Example!</h1>
+		
+		<div class="subtitle">
+			<p class="chapter">in Miscellany</p>
+			<p class="date">on Sun, 24 Dec 2023</p>
+		</div>
+		
+		
+<a class="permalink" href="#1."><h2 id="1.">Examples, for example</h2></a>
+<p>Foo is a nonsense pile of letters.</p>
+<p>It and its sibling bar are the most common example terms in programming documentation.
+Python often prefers spam and eggs as a reference to <em>Monty Python and the Holy Grail</em>, for which the language itself is named.
+Plenty of other example terms show up in documentation and elsewhere.</p>
+<p>Whatever example terms one chooses, their uses are generally <em>asemic</em> – they don't carry any meaning.
+In principle, any sequence of characters can be used as an asemic term, as long as it fits the syntactic constraints of its use.</p>
+<p>I prefer certain example terms that I haven't seen anyone else use.
+My defaults are Bocchi, Ryou, Nijika, and Kita.
+Some may recognize these as the lead characters from the Japanese comedy cartoon, <em>Bocchi the Rock!</em></p>
+<p>Now, I did enjoy watching that cartoon, but I have much stronger reasons for preferring terms from it for examples than that.
+It's very common that I use Bocchi terms <em>semantically</em> for examples.
+Not as their meanings, per se; they are just person names.
+Rather, I use the abstract relationships within the setting of <em>Bocchi the Rock!</em> to reflect the relationships between terms in my examples.</p>
+<p>Of course, that's only really meaningful for those familiar with the events of the cartoon.
+For the majority of people, the terms are unintelligible.
+But that's no different from choosing asemic terms like foo and bar in the first place.
+Even if it doesn't particularly help the reader, it does lower the cognitive load on myself as the writer as my examples grow more complex.</p>
+<p>I could reach for baz when I need something that contains a foo and a bar, but then I have to spend time thinking once I need a place for a baz to be.
+In contrast, a KessokuBand naturally contains a Bocchi and a Ryou, and it naturally lives in Shimokitazawa.</p>
+<p>Is it particularly common for me to need a place name when describing a programming concept? Probably not.
+However, there is another common situation where I need a library of example terms with preconstructed relationships, including place names, domain names, dates, email addresses, &amp;c.: unit tests.
+(And in those cases, I've found that using Japanese terms has the added benefit of reminding me that things like person names, street addresses, and phone numbers don't always follow the conventions I'm accustomed to as an American.)</p>
+<p>I am writing this article for two purposes.
+The first purpose is to challenge thoughtless use of asemic example terms in places where terms with semantic relationships could provide a richer experience, or at least make writing easier.
+Human brains are very good at thinking, but they're also very good at avoiding thinking, and that's an inhibition.
+If you've thought something like, &quot;I'll use Bocchi (<a href="https://www.reddit.com/r/rust/comments/6hirku/why_are_there_so_many_madoka_references_in_rusts/" target="_blank" rel="noopener">or Madoka</a>) for examples, too!&quot; or &quot;I hate weebs, just use a normal source like Dr. Who instead,&quot; then I've already fulfilled this goal.</p>
+<p>The second purpose is to construct a reference of the kinds and content of relationships depicted specifically in Bocchi, so that I don't have to keep navigating to the corresponding Wikipedia article and community Discord server to look up certain details when writing unit tests for my DAOs and DTOs.
+That is the rest of this article.</p>
+
+
+<a class="permalink" href="#2."><h2 id="2.">People, and default examples</h2></a>
+<p>Except as noted, names are written in Japanese convention of family name preceding given name, where relevant.</p>
+<ul>
+<li>Bocchi (ぼっち)
+<ul>
+<li>Member of Kessoku Band</li>
+<li>21 Feb birthday</li>
+<li>Also an alias for Gotō (= Gotoh) Hitori (後藤 ひとり)</li>
+</ul>
+</li>
+<li>Yamada Ryō (= Ryou, though seems others prefer to transliterate as Ryo) (山田 リョウ)
+<ul>
+<li>Kessoku Band</li>
+<li>b. 18 Sep</li>
+</ul>
+</li>
+<li>Ijichi Nijika (伊地知 虹夏)
+<ul>
+<li>Kessoku Band</li>
+<li>b. 29 May</li>
+</ul>
+</li>
+<li>Kita Ikuyo (喜多 郁代)
+<ul>
+<li>Kessoku Band</li>
+<li>b. 21 Apr</li>
+<li>Kita Kita is an alias, although usually not a good one for tests</li>
+</ul>
+</li>
+<li>Hiroi Kikuri (廣井 きくり)
+<ul>
+<li>Member of SICK HACK</li>
+<li>b. 28 Sep (except 29 Sep specifically in 2023?? Am I misreading JP Wikipedia?? Why am I even reading it???)</li>
+</ul>
+</li>
+<li>Ijichi Seika (伊地知 星歌)
+<ul>
+<li>Manager of Starry</li>
+<li>b. 24 Dec</li>
+</ul>
+</li>
+</ul>
+<p>There are many more characters, but I've never felt the need for more person names.</p>
+
+
+<a class="permalink" href="#3."><h2 id="3.">Groups or containers</h2></a>
+<ul>
+<li>Kessoku Band
+<ul>
+<li>Contains Bocchi, Ryou, Nijika, Kita</li>
+<li>Social in-group; proximal</li>
+</ul>
+</li>
+<li>SICK HACK
+<ul>
+<li>Contains Kikuri, Eliza, Shima</li>
+<li>Social out-group; distal</li>
+</ul>
+</li>
+</ul>
+
+
+<a class="permalink" href="#4."><h2 id="4.">Places</h2></a>
+<p>Starry, the concert venue, is the only place name I've needed so far.
+AFAIK no street address; I typically use &quot;123 Downstairs&quot; because it is downstairs.</p>
+<p>Hierarchical location name of most story events:</p>
+<ul>
+<li>Shimokitazawa, the neighborhood in</li>
+<li>Kitazawa, the district in</li>
+<li>Setagaya, the city or special ward in</li>
+<li>Tokyo, the metropolis or prefecture in</li>
+<li>Japan, the country.</li>
+</ul>
+<p>I don't know how Japanese addresses are normally written, so I write &quot;Kitazawa, Tōkyō, Japan&quot; when mimicking American style addresses.</p>
+
+
+<a class="permalink" href="#5."><h2 id="5.">Dates</h2></a>
+<p>I don't believe Bocchi is set in any particular year, so choose one that makes sense for the situation; e.g. 2006 for a birth date or 2024 for the date of an event.</p>
+<ul>
+<li>21 Feb: Bocchi's birthday</li>
+<li>21 Apr: Kita's birthday</li>
+<li>10 May: Gotoh day (五 = go = 5, 十 = tō = 10)</li>
+<li>29 May: Nijika's birthday</li>
+<li>14 Aug: Kessoku Band's first live performance, per cartoon</li>
+<li>18 Sep: Ryou's birthday</li>
+</ul>
+<p>Probably many more canonically relevant dates, but I've never needed nearly this many anyway.</p>
+
+
+<a class="permalink" href="#6."><h2 id="6.">Others</h2></a>
+<ul>
+<li>Domain name: bocchi.rocks
+<ul>
+<li>Implies email addresses like <code>gotoh@bocchi.rocks</code></li>
+</ul>
+</li>
+<li>Phone numbers? Someone please suggest. Calling code is +81, FWIW.</li>
+</ul>
+
+
+	</article>
+	<script src="https://giscus.app/client.js"
+		data-repo="zephyrtronium/zephyrtronium.github.io"
+		data-repo-id="MDEwOlJlcG9zaXRvcnkyNjEwNDIxNTQ="
+		data-category="Announcements"
+		data-category-id="DIC_kwDOD48v6s4B_JuI"
+		data-mapping="og:title"
+		data-reactions-enabled="1"
+		data-emit-metadata="0"
+		data-theme="https://zephyrtronium.github.io/style/giscus.css"
+		crossorigin="anonymous"
+		async>
+	</script>
+	
+<hr>
+<footer>
+	<p>
+	
+	Tagged: weeb garbage<br/>
+	
+		My blog uses <a href="https://github.com/oxalorg/sakura" target="_blank" rel="noreferrer noopener">sakura</a>, a classless CSS framework.
+		<br/>
+		Except as otherwise indicated, all content is Copyright 2023 Branden J Brown and is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
+		<br/>
+		<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>
+	</p>
+</footer>
+
+</body>
