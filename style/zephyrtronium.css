@@ -122,6 +122,8 @@ hr {
     border-color: #2b7c00;
 }
 
-.giscus {
+#clicky {
     margin-top: 1em;
+    display: block;
+    text-align: center;
 }
