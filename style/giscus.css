@@ -25,3 +25,7 @@
         --color-btn-hover-bg: #101210;
     }
 }
+
+.gsc-reactions-count {
+    display: none;
+}
