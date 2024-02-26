@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom">
+  <title>zephyrtronium</title>
+  <id>https://zephyrtronium.github.io/</id>
+  <updated>2024-02-25T17:59:52-06:00</updated>
+  <subtitle>correct opinions about types, go, capital letters, &amp;c.</subtitle>
+  <link href="https://zephyrtronium.github.io/"></link>
+  <author>
+    <name>zephyrtronium</name>
+    <email>zephyrtronium@hey.com</email>
+  </author>
+  <entry>
+    <title>Choosing RWMutex</title>
+    <updated>2021-03-24T11:00:00Z</updated>
+    <id>articles/rwmutex.html</id>
+    <link href="https://zephyrtronium.github.io/articles/rwmutex.html" rel="alternate"></link>
+    <summary type="html">You need to maximize throughput in a concurrent algorithm. Will an RWMutex help?</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+  <entry>
+    <title>Sync Map, Reconstructed</title>
+    <updated>2021-04-13T11:00:00Z</updated>
+    <id>articles/syncmap.html</id>
+    <link href="https://zephyrtronium.github.io/articles/syncmap.html" rel="alternate"></link>
+    <summary type="html">Where does sync.Map actually fit? Let&#39;s rebuild it from scratch to find out!</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+  <entry>
+    <title>JSON Constructors</title>
+    <updated>2023-12-23T11:00:00Z</updated>
+    <id>articles/unmarshal-validation.html</id>
+    <link href="https://zephyrtronium.github.io/articles/unmarshal-validation.html" rel="alternate"></link>
+    <summary type="html">Combining some obscure features of Go lets us ensure we never decode invalid objects, keeping our APIs and systems safe.</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+  <entry>
+    <title>Static Assert in Go</title>
+    <updated>2024-02-11T11:00:00Z</updated>
+    <id>articles/static-assert.html</id>
+    <link href="https://zephyrtronium.github.io/articles/static-assert.html" rel="alternate"></link>
+    <summary type="html">Make the compiler check your assumptions before any code runs.</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+  <entry>
+    <title>GitHub Copilot and License Restrictions</title>
+    <updated>2021-07-03T11:00:00Z</updated>
+    <id>articles/copilot.html</id>
+    <link href="https://zephyrtronium.github.io/articles/copilot.html" rel="alternate"></link>
+    <summary type="html">Implications of GitHub Copilot</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+  <entry>
+    <title>Constraints Aren&#39;t Enums</title>
+    <updated>2021-12-05T11:00:00Z</updated>
+    <id>articles/generics-enums.html</id>
+    <link href="https://zephyrtronium.github.io/articles/generics-enums.html" rel="alternate"></link>
+    <summary type="html">Go 1.18 still does not add sum types.</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+  <entry>
+    <title>StAtE OF tHe arT In RAnDomneSS</title>
+    <updated>2023-09-02T11:00:00Z</updated>
+    <id>articles/randomness.html</id>
+    <link href="https://zephyrtronium.github.io/articles/randomness.html" rel="alternate"></link>
+    <summary type="html">A tour of pseudorandom number generators. Extended notes for my GopherCon 2023 lightning talk.</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+  <entry>
+    <title>Bocchi the Example!</title>
+    <updated>2023-12-24T11:00:00Z</updated>
+    <id>articles/bocchi.html</id>
+    <link href="https://zephyrtronium.github.io/articles/bocchi.html" rel="alternate"></link>
+    <summary type="html">Unfoo your bar, baz.</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+</feed>
