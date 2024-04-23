@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom">
   <title>zephyrtronium</title>
   <id>https://zephyrtronium.github.io/</id>
-  <updated>2024-03-13T12:55:09-05:00</updated>
+  <updated>2024-04-23T02:20:33-05:00</updated>
   <subtitle>correct opinions about types, go, capital letters, &amp;c.</subtitle>
   <link href="https://zephyrtronium.github.io/"></link>
   <author>
@@ -47,6 +47,17 @@
     <id>https://zephyrtronium.github.io/articles/static-assert.html</id>
     <link href="https://zephyrtronium.github.io/articles/static-assert.html" rel="alternate"></link>
     <summary type="html">Make the compiler check your assumptions before any code runs.</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+  <entry>
+    <title>Thoughts on a Programming Language</title>
+    <updated>2024-04-23T11:00:00Z</updated>
+    <id>https://zephyrtronium.github.io/articles/lang.html</id>
+    <link href="https://zephyrtronium.github.io/articles/lang.html" rel="alternate"></link>
+    <summary type="html">A summary of design goals for the programming language I wish I were using.</summary>
     <author>
       <name>zephyrtronium</name>
       <email>zephyrtronium@hey.com</email>
