@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<head>
+	
+<link rel="stylesheet" href="/style/normalize.css" type="text/css">
+<link rel="stylesheet" href="/style/sakura.css" type="text/css">
+<link rel="stylesheet" href="/style/zephyrtronium.css" type="text/css">
+<link rel="alternate" href="/weblog.atom" type="application/atom+xml">
+<meta property="og:site_name" content="zephyrtronium" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+	<title>Subtype Polymorphism and RTTI | zephyrtronium</title>
+	<meta property="og:title" content="Subtype Polymorphism and RTTI" />
+	<meta property="og:description" content="If we want to avoid RTTI, can we have subtype polymorphism?" />
+</head>
+<body>
+	<header>
+		<h3><a href="/">zephyrtronium</a></h3>
+	</header>
+	<hr>
+	<article>
+		<h1>Subtype Polymorphism and RTTI</h1>
+		
+		<div class="subtitle">
+			<p class="chapter">in Thoughts on a Programming Language</p>
+			<p class="date">on Tue, 23 Apr 2024</p>
+		</div>
+		
+		
+<a class="permalink" href="#1."><h2 id="1.">Dynamic Dispatch</h2></a>
+<p>I discussed the tension between subtype polymorphism and runtime type information (RTTI) in <a href="/articles/lang.html" target="_blank" rel="noopener">the exposition</a>.
+While I'm interested in seeing the results of a language with only parametric polymorphism, I do have some thoughts on how to introduce subtyping, or something resembling it, without requiring RTTI.</p>
+<p>The first thing we want is <em>dynamic dispatch</em>, the ability to respond to a message to one static type which selects behavior depending an arbitrary dynamic type according to the construction of the value.
+Normally this is done by having the supertype include a vtable, a list of function pointers which the subtype fills out with its own implementations.
+That's easy to do without RTTI, and even to some extent without language support; see Zig.</p>
+<p>The second thing we want is <em>specialization</em>.
+Here that's basically just the ability to inspect the dynamic type of a supertype variable and write our own local code that varies with it, without requiring the subtype to provide the specialized behavior we want.
+This is much harder to do without RTTI, but it can often be important especially for performance reasons.</p>
+<p>That kind of specialization also violates <em>parametricity</em>, a property arising from viewing types as relations that allows us to derive proofs about code &quot;for free.&quot;
+Parametricity is extremely powerful, but it requires some strong assumptions about the type system.
+Meeting those assumptions in ligma lang could have great advantages for testing and optimization.</p>
+
+
+<a class="permalink" href="#2."><h2 id="2.">Sealed Hierarchies; Or, Sum Types</h2></a>
+<p>Scala, Kotlin, and soon even Java have the concept of <em>sealed hierarchies</em>.
+We provide the definition of some extensible type, but then provide a complete, closed list of all of its subtypes.
+We can't add any new subtypes without modifying the definition of the supertype.</p>
+<p>It's pretty obvious to see how we can implement a sealed hierarchy without RTTI.
+Rather than hold a descriptor of which dynamic type is in use, we only need to enumerate the types in the hierarchy and track the index into that enumeration.</p>
+<p>We can do a very similar thing using the sum types that we already want.
+It seems like all we really need is a rule like this:</p>
+<blockquote>
+<p>A property shared by every variant of a sum type is promoted to the sum type itself and dispatches dynamically.</p>
+</blockquote>
+<p>Here I'm using &quot;property&quot; to refer to any named thing on a type, be it a field or a method, along with the type of the result it produces.
+If it's the same on every variant, then we can do dynamic dispatch trivially.
+While I don't yet have ideas for method syntax, we can look at some examples with product type fields.</p>
+<pre><code>​// .PromotedX has a promoted accessor .x of type int.
+​// Every variant is a product type with that field.
+type .PromotedX =
+    / .1: (* .x: int)
+    / .2: (* .x: int, * .y: int)
+
+​// .NotPromotedX has no promoted accessors.
+​// The types of the .x fields disagree between variants.
+type .NotPromotedX =
+    / .1: (* .x: int)
+    / .2: (* .x: string)
+
+​// .NothingToPromote has no promoted accessors.
+​// There are no properties with the same name.
+type .NothingToPromote =
+    / .1: (* .x: int)
+    / .2: (* .y: int)
+</code></pre>
+<p>And again, we only need to know an index into a list to implement this.
+No RTTI needed. Not even type identities.</p>
+<p>With this approach, we even keep parametricity while enabling specialization.
+We aren't really specializing on a type per se, but rather specializing on a variant of a type.</p>
+<p>This idea is like backward nominal subtyping.
+Instead of a bunch of types declaring themselves to be subtypes of the supertype, we have a type declaring itself to be the supertype of a bunch of subtypes.</p>
+<p>Well, strictly speaking, this isn't subtyping at all.
+We have to explicitly construct the sum-typed value using the variant of our choice, rather than directly using the subtype in place of the supertype.
+For practical purposes, I think it's close enough.</p>
+<p>Speaking of practical purposes, does this rule really provide what we want out of subtype polymorphism?
+It seems obviously fine for mocking, as long as we can reasonably provide a mock of every property of the real implementation.
+Strategy pattern also seems like it would work fine here.</p>
+<p>But obviously, that isn't an exhaustive list of the places subtype polymorphism is useful.
+I'm curious where it falls short.
+If there are places where sum types aren't good enough, then maybe we can take the approach Zig uses:
+Make the programmer implement their own vtables.
+As long as we have product types and closures, it's viable.</p>
+
+
+<a class="permalink" href="#3."><h2 id="3.">Dual</h2></a>
+<p>It's vaguely interesting to think about the dual of the sum type rule, i.e. the rule we'd apply to product types instead.
+It would go something like:</p>
+<blockquote>
+<p>Any property on exactly one field of a product type is promoted to the product type itself.</p>
+</blockquote>
+<p>I think this is probably a bad rule, although it may show up again in a later note.
+Maybe it would be more useful – and less bad – than I think.</p>
+
+
+<a class="permalink" href="#4."><h2 id="4.">Still Lacking</h2></a>
+<p>This approach definitely doesn't actually meet our needs, but ironically, the problem doesn't have anything to do with subtype polymorphism itself.</p>
+<p>I mentioned in the exposition that both Rust and Go use the same construct to express both subtype polymorphism and bounds in parametric polymorphism.
+Rust uses traits and dyn traits; Go uses interfaces with generalizations for generics.
+I think that's a good approach.</p>
+<p>If our subtype polymorphism approach is &quot;don't,&quot; then we need a different way to express bounds.
+I still don't have any idea of how that should look.</p>
+
+
+	</article>
+	<div id="clicky"><a style="display:none;" href="#">Click here to go to GitHub!</a></div>
+	<script>
+		function injectClicky(event) {
+			if (event.origin !== 'https://giscus.app') return;
+			if (!(typeof event.data === 'object' && event.data.giscus)) return;
+			const giscusData = event.data.giscus;
+			if ('discussion' in giscusData) {
+				const clicky = document.querySelector('#clicky a');
+				clicky.href = giscusData.discussion.url;
+				clicky.style.display = "";
+				window.removeEventListener('message', injectClicky);
+			}
+		}
+		window.addEventListener('message', injectClicky);
+	</script>
+	<script src="https://giscus.app/client.js"
+		data-repo="zephyrtronium/zephyrtronium.github.io"
+		data-repo-id="MDEwOlJlcG9zaXRvcnkyNjEwNDIxNTQ="
+		data-category="Announcements"
+		data-category-id="DIC_kwDOD48v6s4B_JuI"
+		data-mapping="og:title"
+		data-reactions-enabled="1"
+		data-emit-metadata="1"
+		data-theme="https://zephyrtronium.github.io/style/giscus.css"
+		crossorigin="anonymous"
+		async>
+	</script>
+	
+<hr>
+<footer>
+	<p>
+	
+	Tagged: programming language, types<br/>
+	
+		My blog uses <a href="https://github.com/oxalorg/sakura" target="_blank" rel="noreferrer noopener">sakura</a>, a classless CSS framework.
+		<br/>
+		Except as otherwise indicated, all content is Copyright 2023 Branden J Brown and is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
+		<br/>
+		<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>
+	</p>
+</footer>
+
+</body>
