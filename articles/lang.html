@@ -39,10 +39,10 @@ Recently, I have started accumulating written notes, ranging from considerations
 The plan is to continue writing notes, usually short ones, once per day.
 If I continue on this plan, eventually there will be enough written down to derive a specification and an implementation or two.</p>
 <p>For historical and community reasons, the tentative name for this programming language is ligma lang.
-I don't think I want to use that name permanently, because I suspect it would attract an undesirable crowd.
-I have ideas for what permanent name to use, but for now, that is low on the list of thoughts.</p>
+I have ideas for permanent names to use – and I can't deny that ligma is on that list – but for now, that is low on the list of thoughts.</p>
 <p>Relative to better programming language designers, my education is a bit unusual.
 I have most of an undergraduate computer science degree and half an undergraduate math degree, both sans category theory.
+Otherwise, I'm self-taught.
 I like to try to use precise terms regardless.
 Feel free to correct me if I miss the mark.</p>
 <p>The first thing to move here is the summary of design goals.
@@ -70,7 +70,7 @@ The language should help you determine when your API changes and you need a vers
 <p>Tests should be first-class.
 Tooling from code style to static analysis should be first-class.
 A language server should be first-class, probably one of the first programs written in any serious programming language being designed in 2024.</p>
-<p>The goal of ligma lang is this statement:
+<p>The prime directive of ligma lang is this statement:
 the programming language is the developer experience.</p>
 
 
@@ -86,7 +86,7 @@ for every promise in the argument list, you know that it is completed by the tim
 Zig has async frames.
 I know that Kotlin has strong support as well, although I don't know the details.
 For languages that don't have structured concurrency built in, it's usually straightforward to implement as a library.
-E.g., Go has <a href="https://pkg.go.dev/golang.org/x/sync/errgroup" target="_blank" rel="noopener">x/sync/errgroup</a>.</p>
+E.g., Go has <a href="https://pkg.go.dev/golang.org/x/sync/errgroup" target="_blank" rel="noopener">x/sync/errgroup</a> and <a href="https://pkg.go.dev/github.com/sourcegraph/conc" target="_blank" rel="noopener">sourcegraph/conc</a>, among others.</p>
 <p>The thing I find surprising is that there still doesn't seem to be a language which has <em>only</em> structured concurrency.
 Everyone still insists on allowing unrestricted concurrency.
 That defeats the entire point of having structured concurrency at all.</p>
@@ -137,11 +137,12 @@ They're &quot;co-&quot; products because they have a deep relationship with prod
 I'll usually refer to them as sum types, which are technically a particular variety of coproduct, but I think sufficient for my vision.</p>
 <p>I feel that products and sums are foundational to programming.
 Moreover, they are <em>equally fundamental</em>.
-There is no reason to elevate products above sums; they both arise frequently in domain modeling.
-F# comes very close to doing what I want here.</p>
+There is no reason to elevate products above sums; they both arise frequently in domain modeling.</p>
 <p>Since both products and sums are equal, they should have similar cost to express in syntax.
 Since both are important, both should be easy to use.
-Defining a new type of either variety should come naturally.</p>
+Defining a new type of either variety should come naturally.
+F# and TypeScript come very close to doing what I want here.
+Ligma lang can still do better.</p>
 
 <a class="permalink" href="#4.1."><h3 id="4.1.">Bonus: Type Syntax</h3></a>
 <p>Given the importance of product and sum types, I've landed already on how I think the syntax for defining them should look.
