@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom">
   <title>zephyrtronium</title>
   <id>https://zephyrtronium.github.io/</id>
-  <updated>2024-04-23T20:04:25-05:00</updated>
+  <updated>2024-04-24T20:33:22-05:00</updated>
   <subtitle>correct opinions about types, go, capital letters, &amp;c.</subtitle>
   <link href="https://zephyrtronium.github.io/"></link>
   <author>
@@ -69,6 +69,17 @@
     <id>https://zephyrtronium.github.io/articles/lang-subtypes.html</id>
     <link href="https://zephyrtronium.github.io/articles/lang-subtypes.html" rel="alternate"></link>
     <summary type="html">If we want to avoid RTTI, can we have subtype polymorphism?</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+  <entry>
+    <title>The Importance of Maybe</title>
+    <updated>2024-04-24T11:00:00Z</updated>
+    <id>https://zephyrtronium.github.io/articles/lang-maybe.html</id>
+    <link href="https://zephyrtronium.github.io/articles/lang-maybe.html" rel="alternate"></link>
+    <summary type="html">The Maybe or Option type is too important to relegate to the same syntax as other type constructors.</summary>
     <author>
       <name>zephyrtronium</name>
       <email>zephyrtronium@hey.com</email>
