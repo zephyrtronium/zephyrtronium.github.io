@@ -60,16 +60,7 @@ Since effects are captured in <code>bocchi</code>'s type, that means the type of
 Hence, polymorphism of the row variety.</p>
 
 
-<a class="permalink" href="#2."><h2 id="2.">And the Expression Problem</h2></a>
-<p>One of our design goals is to ensure that if <code>bocchi</code> depends on <code>ryou</code>, then a change to <code>ryou</code> cannot force us to recompile <code>bocchi</code>.
-Statically typed dynamic scope has an interesting interaction with that goal.</p>
-<p>We've already established the characteristic that <code>bocchi</code>'s type (or more precisely, the type of an instantiation of <code>bocchi</code>) depends on the type of <code>ryou</code>, because it needs the transitive closure of its dependencies' dynamic scope.</p>
-<p>However, depending on the implementation of dynamic scope, we may not need to recompile <code>bocchi</code> even despite its change in type.
-As long as <code>ryou</code> knows how to obtain elements of dynamic scope without having to be supplied them directly by <code>bocchi</code>, we don't violate the expression problem by providing it.
-Neat.</p>
-
-
-<a class="permalink" href="#3."><h2 id="3.">And Structured Concurrency</h2></a>
+<a class="permalink" href="#2."><h2 id="2.">And Structured Concurrency</h2></a>
 <p>Given that structured concurrency lets us assign a type to collections of concurrent operations, we might wonder whether there's an interaction between it and dynamic scope.
 For example, what happens when <code>bocchi</code> is given a concurrency lifetime to add new coroutines to, but injects a new <code>pacifica</code> before spawning <code>ryou</code> in that lifetime?</p>
 <p>This, too, is fine.
