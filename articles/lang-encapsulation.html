@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<head>
+	
+<link rel="stylesheet" href="/style/normalize.css" type="text/css">
+<link rel="stylesheet" href="/style/sakura.css" type="text/css">
+<link rel="stylesheet" href="/style/zephyrtronium.css" type="text/css">
+<link rel="alternate" href="/weblog.atom" type="application/atom+xml">
+<meta property="og:site_name" content="zephyrtronium" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+	<title>Encapsulation and Selection | zephyrtronium</title>
+	<meta property="og:title" content="Encapsulation and Selection" />
+	<meta property="og:description" content="Not just for OOP." />
+</head>
+<body>
+	<header>
+		<h3><a href="/">zephyrtronium</a></h3>
+	</header>
+	<hr>
+	<article>
+		<h1>Encapsulation and Selection</h1>
+		
+		<div class="subtitle">
+			<p class="chapter">in Thoughts on a Programming Language</p>
+			<p class="date">on Fri, 26 Apr 2024</p>
+		</div>
+		
+		
+<a class="permalink" href="#1."><h2 id="1.">It Matters</h2></a>
+<p>First of all, yes.</p>
+<p>Despite being touted as one of the pillars of object-oriented programming, encapsulation is a very deep and important concept in programming languages in general.
+In particular, it's crucial to the idea of making illegal states unrepresentable.
+You can't prevent the construction of illegal states if anyone can access any constructor.
+(At least, not without dependent types.)</p>
+<p>So, ligma lang needs a concept of encapsulation.
+But there are a few options for how to actually do it.</p>
+
+
+<a class="permalink" href="#2."><h2 id="2.">Kinds of Encapsulation</h2></a>
+<p><a href="https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/access-modifiers" target="_blank" rel="noopener">Consider C#</a>, which has:</p>
+<ul>
+<li><code>file</code>, only available in the actual file of the declaration.</li>
+<li><code>private</code>, available within the class.</li>
+<li><code>protected</code>, for properties available to subclasses.</li>
+<li><code>private protected</code>, like <code>protected</code> but only for subclasses in the same assembly (roughly what Rust calls a crate or what Go calls a module).</li>
+<li><code>internal</code>, to make something available to everything in the same assembly.</li>
+<li><code>protected internal</code>, the union of <code>protected</code> and <code>internal</code>.</li>
+<li><code>public</code>, available everywhere.</li>
+</ul>
+<p>F# has a <a href="https://learn.microsoft.com/en-us/dotnet/fsharp/language-reference/access-control" target="_blank" rel="noopener">much smaller list</a>:</p>
+<ul>
+<li><code>private</code> is private to a type or module.</li>
+<li><code>internal</code> is internal to an assembly.</li>
+<li><code>public</code> is visible everywhere. Notably, this is the default!</li>
+</ul>
+<p><a href="https://doc.rust-lang.org/reference/visibility-and-privacy.html" target="_blank" rel="noopener">Contrast with Rust</a>:</p>
+<ul>
+<li>Unspecified, making the item available only in the same module and any of its descendents</li>
+<li><code>pub</code>, available everywhere.</li>
+</ul>
+<p>And <a href="https://go.dev/tour/basics/3" target="_blank" rel="noopener">yet another consideration is Go</a>:</p>
+<ul>
+<li>Identifiers not starting with a capital letter – a character in Unicode class Lu – are unexported, visible only in the same package.</li>
+<li>Those that do are exported, visible anywhere.</li>
+</ul>
+<p>I'm not sure which of these approaches ligma lang should use.
+But I'm reasonably confident based on my experience with Rust and Go that the two-level &quot;visible everywhere&quot; or &quot;visible in this (relatively large) scope&quot; is enough encapsulation without requiring too much cognition.</p>
+
+
+<a class="permalink" href="#3."><h2 id="3.">Syntax</h2></a>
+<p>One thing I am certain about is that Go's approach of using capitalization to indicate encapsulation is… misguided.
+Anglocentric.
+There are many languages that don't <em>have</em> capitalization.</p>
+<p>For example, I know that Go is popular in China.
+If a Chinese programmer wants to use their native language for names, then they have to prefix exported identifiers with an X or another Latin letter, like <code>type X世界 struct {}</code>.
+It's a pretty miserable DX if you don't speak one of the languages of Europe.</p>
+<p>That said, I do think that making private the default and public not much harder is a good design.
+Having a <code>pub</code> keyword is probably not too much, but I still think we can do better.</p>
+<p>Here's the idea I have:</p>
+<blockquote>
+<p>Except when part of a floating point literal, the <code>.</code> character is always the first character of an exported identifier.
+All other identifiers are unexported.</p>
+</blockquote>
+<p>If module <code>kessoku</code> contains definitions of <code>.bocchi</code> and <code>ryou</code>, then <code>.bocchi</code> is visible outside <code>kessoku</code> and <code>ryou</code> isn't.
+Similar for fields and methods of types.</p>
+<p>Of course, this leaves the question of how to <em>access</em> these members, if <code>.</code> is reserved for identifiers.
+Here we can fall back to how it already generally works in functional programming.
+Just put them adjacent.
+So, <code>kessoku ryou</code> accesses the <code>ryou</code> member of <code>kessoku</code>, and <code>kessoku.bocchi</code> – really <code>kessoku .bocchi</code> – accesses the <code>.bocchi</code> member.</p>
+<p>This also ties in to <a href="/articles/lang.html#4.1." target="_blank" rel="noopener">our &quot;tuple&quot; syntax</a>.
+Since <code>.</code> is the first character of an identifier, rather than being an operator lexed separately, we can put bare numbers after it and the result is still an identifier per usual identifier rules.
+<code>.0</code> and <code>.81</code> are just names.
+Tuples are just structs that use names like these.</p>
+
+
+	</article>
+	<div id="clicky"><a style="display:none;" href="#">Click here to comment on GitHub!</a></div>
+	<script>
+		function injectClicky(event) {
+			if (event.origin !== 'https://giscus.app') return;
+			if (!(typeof event.data === 'object' && event.data.giscus)) return;
+			const giscusData = event.data.giscus;
+			if ('discussion' in giscusData) {
+				const clicky = document.querySelector('#clicky a');
+				clicky.href = giscusData.discussion.url;
+				clicky.style.display = "";
+				window.removeEventListener('message', injectClicky);
+			}
+		}
+		window.addEventListener('message', injectClicky);
+	</script>
+	<script src="https://giscus.app/client.js"
+		data-repo="zephyrtronium/zephyrtronium.github.io"
+		data-repo-id="MDEwOlJlcG9zaXRvcnkyNjEwNDIxNTQ="
+		data-category="Announcements"
+		data-category-id="DIC_kwDOD48v6s4B_JuI"
+		data-mapping="og:title"
+		data-reactions-enabled="1"
+		data-emit-metadata="1"
+		data-theme="https://zephyrtronium.github.io/style/giscus.css"
+		crossorigin="anonymous"
+		async>
+	</script>
+	
+<hr>
+<footer>
+	<p>
+	
+	Tagged: programming language, types<br/>
+	
+		My blog uses <a href="https://github.com/oxalorg/sakura" target="_blank" rel="noreferrer noopener">sakura</a>, a classless CSS framework.
+		<br/>
+		Except as otherwise indicated, all content is Copyright 2023 Branden J Brown and is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
+		<br/>
+		<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>
+	</p>
+</footer>
+
+</body>

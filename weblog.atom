@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom">
   <title>zephyrtronium</title>
   <id>https://zephyrtronium.github.io/</id>
-  <updated>2024-04-26T07:00:40-05:00</updated>
+  <updated>2024-04-26T18:07:33-05:00</updated>
   <subtitle>correct opinions about types, go, capital letters, &amp;c.</subtitle>
   <link href="https://zephyrtronium.github.io/"></link>
   <author>
@@ -91,6 +91,17 @@
     <id>https://zephyrtronium.github.io/articles/lang-dynamic-scope.html</id>
     <link href="https://zephyrtronium.github.io/articles/lang-dynamic-scope.html" rel="alternate"></link>
     <summary type="html">Dependency injection SOLVED?</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+  <entry>
+    <title>Encapsulation and Selection</title>
+    <updated>2024-04-26T11:00:00Z</updated>
+    <id>https://zephyrtronium.github.io/articles/lang-encapsulation.html</id>
+    <link href="https://zephyrtronium.github.io/articles/lang-encapsulation.html" rel="alternate"></link>
+    <summary type="html">Not just for OOP.</summary>
     <author>
       <name>zephyrtronium</name>
       <email>zephyrtronium@hey.com</email>
