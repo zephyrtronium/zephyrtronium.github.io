@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<head>
+	
+<link rel="stylesheet" href="/style/normalize.css" type="text/css">
+<link rel="stylesheet" href="/style/sakura.css" type="text/css">
+<link rel="stylesheet" href="/style/zephyrtronium.css" type="text/css">
+<link rel="alternate" href="/weblog.atom" type="application/atom+xml">
+<meta property="og:site_name" content="zephyrtronium" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+	<title>Statically Typed Dynamic Scope | zephyrtronium</title>
+	<meta property="og:title" content="Statically Typed Dynamic Scope" />
+	<meta property="og:description" content="Dependency injection SOLVED?" />
+</head>
+<body>
+	<header>
+		<h3><a href="/">zephyrtronium</a></h3>
+	</header>
+	<hr>
+	<article>
+		<h1>Statically Typed Dynamic Scope</h1>
+		
+		<div class="subtitle">
+			<p class="chapter">in Thoughts on a Programming Language</p>
+			<p class="date">on Thu, 25 Apr 2024</p>
+		</div>
+		
+		
+<a class="permalink" href="#1."><h2 id="1.">Dynamic Scope</h2></a>
+<p>Dynamic scope means a function is allowed to access local variables of its callers.
+Sounds only very terrifying, doesn't it?</p>
+<p>Well, let's walk it back a bit.
+Dynamic scope can also require those callers to have provided the variables the callee can access.
+The WithValue parts of Go's <a href="https://pkg.go.dev/context#WithValue" target="_blank" rel="noopener">context.Context</a> are an example of this.
+Vue and presumably other frontend frameworks have <a href="https://vuejs.org/guide/components/provide-inject.html" target="_blank" rel="noopener">provide and inject</a>.
+That makes it somewhat more reasonable.</p>
+<p>I think dynamic scope could be even better, though.
+Ligma lang can make it statically typed.</p>
+<p>For us to pull this off, a function's type must indicate the transitive closure of dynamically scoped fields it will use.
+That means if <code>bocchi</code> depends on <code>ryou</code> and we change <code>ryou</code> to start using dynamically scoped <code>pacifica</code>, then <code>bocchi</code>'s type also changes to reflect that.
+Making this be inferred rather than explicitly typed by the programmer is crucial.</p>
+<p>This idea is a kind of <em>effect system</em>, which is like a parallel to a type system for describing visible changes to the outside world incurred by a function.
+Recognizing this fact means that we can apply research on effect systems to understand what we can do.</p>
+<p>It so happens that <a href="https://arxiv.org/pdf/1406.2061.pdf" target="_blank" rel="noopener">this paper on Koka's row-polymorphic effects</a> describes almost exactly what we want for dynamic scope.</p>
+<p>Although, unlike that paper, we do require the effects to be ordered by insertion in addition to being multiple.
+That lets <code>bocchi</code> replace the value of <code>pacifica</code> before it calls <code>ryou</code> without affecting <code>kita</code>'s call to <code>ryou</code>.
+When a function adds to dynamic scope, it always pops off the most recent entry for that field when it returns.</p>
+<p>In part as a result of that change, we also don't need closed rows.
+There's no reason to allow encoding &quot;this function must not be provided a <code>bocchi</code> in its dynamic scope.&quot;
+If a function doesn't want <code>bocchi</code>, it simply doesn't read <code>bocchi</code>.
+If we want to replace the value of <code>bocchi</code> for another callee, then we just do that.</p>
+<p>Recognizing dynamic scope as an effect system also gives us some interesting powers.
+If <code>bocchi</code>'s callees (transitively) require <code>pacifica</code>, and <code>bocchi</code> always provides <code>pacifica</code>, then <code>bocchi</code> <em>eliminates</em> the &quot;requires <code>pacifica</code> effect.
+The requirement disappears from <code>bocchi</code>'s type.
+Effect inference can handle that for us automatically.</p>
+<p>It also gives us some guidance about closures.
+If <code>bocchi</code> takes <code>ryou</code> as an argument, then <code>bocchi</code> needs to add the dynamic scope required by <code>ryou</code> to its own (except possibly those fields it eliminates, as above).
+Since effects are captured in <code>bocchi</code>'s type, that means the type of <code>bocchi</code> depends on the dynamic scope of any closure it's passed.
+Hence, polymorphism of the row variety.</p>
+
+
+<a class="permalink" href="#2."><h2 id="2.">And the Expression Problem</h2></a>
+<p>One of our design goals is to ensure that if <code>bocchi</code> depends on <code>ryou</code>, then a change to <code>ryou</code> cannot force us to recompile <code>bocchi</code>.
+Statically typed dynamic scope has an interesting interaction with that goal.</p>
+<p>We've already established the characteristic that <code>bocchi</code>'s type (or more precisely, the type of an instantiation of <code>bocchi</code>) depends on the type of <code>ryou</code>, because it needs the transitive closure of its dependencies' dynamic scope.</p>
+<p>However, depending on the implementation of dynamic scope, we may not need to recompile <code>bocchi</code> even despite its change in type.
+As long as <code>ryou</code> knows how to obtain elements of dynamic scope without having to be supplied them directly by <code>bocchi</code>, we don't violate the expression problem by providing it.
+Neat.</p>
+
+
+<a class="permalink" href="#3."><h2 id="3.">And Structured Concurrency</h2></a>
+<p>Given that structured concurrency lets us assign a type to collections of concurrent operations, we might wonder whether there's an interaction between it and dynamic scope.
+For example, what happens when <code>bocchi</code> is given a concurrency lifetime to add new coroutines to, but injects a new <code>pacifica</code> before spawning <code>ryou</code> in that lifetime?</p>
+<p>This, too, is fine.
+There must be a reference to <code>pacifica</code> in the dynamic scope <em>somewhere</em>.</p>
+<p>Either <code>bocchi</code> provides it for the first time, in which case it eliminates the effect, or <code>bocchi</code> requires it, so the function that adds <code>bocchi</code> to the lifetime in the first place also either provides or requires it.
+The effect propagates exactly as far back as it needs to, even if concurrency is involved.
+It might go as far back to the creation of the concurrent lifetime, or further, but it's allowed to do that.
+In a sense, that's the point of structured concurrency.</p>
+<p>Though, practically, at least with how I'm imagining the implementation, there might be a performance penalty with that situation.</p>
+
+
+	</article>
+	<div id="clicky"><a style="display:none;" href="#">Click here to comment on GitHub!</a></div>
+	<script>
+		function injectClicky(event) {
+			if (event.origin !== 'https://giscus.app') return;
+			if (!(typeof event.data === 'object' && event.data.giscus)) return;
+			const giscusData = event.data.giscus;
+			if ('discussion' in giscusData) {
+				const clicky = document.querySelector('#clicky a');
+				clicky.href = giscusData.discussion.url;
+				clicky.style.display = "";
+				window.removeEventListener('message', injectClicky);
+			}
+		}
+		window.addEventListener('message', injectClicky);
+	</script>
+	<script src="https://giscus.app/client.js"
+		data-repo="zephyrtronium/zephyrtronium.github.io"
+		data-repo-id="MDEwOlJlcG9zaXRvcnkyNjEwNDIxNTQ="
+		data-category="Announcements"
+		data-category-id="DIC_kwDOD48v6s4B_JuI"
+		data-mapping="og:title"
+		data-reactions-enabled="1"
+		data-emit-metadata="1"
+		data-theme="https://zephyrtronium.github.io/style/giscus.css"
+		crossorigin="anonymous"
+		async>
+	</script>
+	
+<hr>
+<footer>
+	<p>
+	
+	Tagged: programming language, types<br/>
+	
+		My blog uses <a href="https://github.com/oxalorg/sakura" target="_blank" rel="noreferrer noopener">sakura</a>, a classless CSS framework.
+		<br/>
+		Except as otherwise indicated, all content is Copyright 2023 Branden J Brown and is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
+		<br/>
+		<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>
+	</p>
+</footer>
+
+</body>
