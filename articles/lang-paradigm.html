@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<head>
+	
+<link rel="stylesheet" href="/style/normalize.css" type="text/css">
+<link rel="stylesheet" href="/style/sakura.css" type="text/css">
+<link rel="stylesheet" href="/style/zephyrtronium.css" type="text/css">
+<link rel="alternate" href="/weblog.atom" type="application/atom+xml">
+<meta property="og:site_name" content="zephyrtronium" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+	<title>Which Paradigm? | zephyrtronium</title>
+	<meta property="og:title" content="Which Paradigm?" />
+	<meta property="og:description" content="Or, Rust is not functional programming, no matter how many iterators you .map().filter().collect()." />
+</head>
+<body>
+	<header>
+		<h3><a href="/">zephyrtronium</a></h3>
+	</header>
+	<hr>
+	<article>
+		<h1>Which Paradigm?</h1>
+		
+		<div class="subtitle">
+			<p class="chapter">in Thoughts on a Programming Language</p>
+			<p class="date">on Sat, 27 Apr 2024</p>
+		</div>
+		
+		
+<a class="permalink" href="#1."><h2 id="1.">Surprise</h2></a>
+<p>I'm not actually decided on what programming paradigm ligma lang should be.</p>
+<p>I like functional programming, because I like writing proofs, solving puzzles, and generalizing things.
+It's certainly less accessible to most developers than procedural programming, though.
+Ligma lang is &quot;the language I wish I were writing,&quot; and me writing it is predicated on it being used.</p>
+<p>So, I think that ligma lang at least has loops and first-class mutability.
+Although, this brings me to a tangent that I think about often.</p>
+
+
+<a class="permalink" href="#2."><h2 id="2.">Functional Programming is a Paradigm</h2></a>
+<p>There seems to be a prevalent notion that functional programming means programming where closures exist and probably everything is immutable.
+You use functions like map, reduce, and filter over lists and assume that the compiler will optimize everything how you want.
+Hence, languages like Rust and JavaScript which have map, reduce, and filter have &quot;functional features.&quot;</p>
+<p>To me, this is like saying, &quot;Chinese is like English except you write Hanzi instead of Latin letters, and sometimes Chinese even borrows from English.&quot;
+It's entirely missing the point.</p>
+<p>Functional programming is a <em>paradigm</em>.
+Haskell is as different from Rust as general relativity is from quantum physics.
+It isn't just a different <em>approach</em> to programming, it's a different <em>foundation</em> to programming.</p>
+<p>Moderately educated programmers generally seem to be aware that functional programming inherits from lambda calculus.
+What they don't usually seem to be aware of is that in (untyped or simply typed) lambda calculus, there is <em>nothing</em> that is not a function.</p>
+<p><code>true</code> is the function <code>true(x) ↦ (g(y) ↦ x)</code>, i.e. &quot;true takes <code>x</code> and evaluates to a function which takes <code>y</code> and returns <code>x</code>.&quot;
+(The symbol ↦ is read &quot;maps to.&quot; Think &quot;map&quot; roughly as in &quot;hash map&quot; here.)
+Note that the <code>x</code> and <code>y</code> that <code>true</code> and its computed closure take <em>are also functions</em>.</p>
+<p>3 is the function <code>3(f) ↦ (g(x) ↦ f(f(f(x))))</code>, or &quot;3 takes an <code>f</code> and evaluates to a new function that composes <code>f</code> three times.&quot;
+I could specify that <code>f</code> has to be a function in order to be so composed, but there's nothing else it could be.
+Lambda calculus <em>only</em> has functions.</p>
+<p>Granted, most functional programming languages are derived from extensions to simply typed lambda calculus that add ideas which cannot be described purely as functions.
+I think it's more precise to describe functional programming languages as those <a href="https://www.youtube.com/watch?v=IOiZatlZtGU" target="_blank" rel="noopener">founded on systems of logic</a>.</p>
+<p>When I think about functional programming, I think about lambda calculus, logic, and category theory.
+I don't think about map, reduce, and filter.
+Those are just structures that arise when considering computation from this foundation.</p>
+<p>I like to call the &quot;everything is immutable, but not everything is purely a logical structure&quot; approach of languages like Erlang, Elixir, or Gleam <em>immutable programming</em>.
+They share with functional programming the characteristic that everything is immutable, but that's about where the similarities end.</p>
+
+
+<a class="permalink" href="#3."><h2 id="3.">Immutable Programming is Good</h2></a>
+<p>Even given all my whining in the previous section, I still think immutable programming is a good idea.
+In fact, I'd rather make ligma lang immutable rather than truly functional.
+Frankly, in a world dominated by OOPlets, functional programming is… inaccessible.</p>
+<p>Compared to procedural or object-oriented programming, immutable programming can help to reduce complexity in software systems.
+If you believe <a href="https://curtclifton.net/papers/MoseleyMarks06a.pdf" target="_blank" rel="noopener">Moseley and Marks</a>, this follows from its property of isolating accidental state.</p>
+<p>It's still <em>possible</em> to encode &quot;mutable memory&quot; by passing a collection to every function, replacing elements of the collection as needed.
+Doing that generally takes much more effort compared to mutable variables, though.
+This is one of ligma lang's design principles: since it's something programmers <em>shouldn't</em> do, it should be <em>harder</em> to do.</p>
+
+
+<a class="permalink" href="#4."><h2 id="4.">Which Paradigm, Though?</h2></a>
+<p>I still feel ligma lang should have first-class mutability.
+Sometimes mutable variables are crucial to performance optimization, in particular because it semantically maps well to how actual hardware works.
+It should be harder than staying with immutable values, though, just like it is in Rust with the <code>mut</code> keyword.</p>
+<p>Totally eschewing mutability would hypothetically allow us to target BEAM, which would be nice for a few reasons.
+It's a very impressive platform with a featureful ecosystem, and its concurrency support would probably simplify the runtime implementation of ligma lang's structured concurrency.</p>
+<p>But, I think we can still achieve most of the advantages of immutable programming using just types, without precluding the kind of high-performance (or sometimes just interoperable-with-C) code that really makes languages suited to authoring world-class services.
+And luckily, between my experience keeping up to date with Go's compiler and runtime and my fairly systems-oriented formal education, I do have a good idea of how to implement the things I want.</p>
+<p>So, I think ligma lang is a strongly typed procedural language that features closures.</p>
+
+
+	</article>
+	<div id="clicky"><a style="display:none;" href="#">Click here to comment on GitHub!</a></div>
+	<script>
+		function injectClicky(event) {
+			if (event.origin !== 'https://giscus.app') return;
+			if (!(typeof event.data === 'object' && event.data.giscus)) return;
+			const giscusData = event.data.giscus;
+			if ('discussion' in giscusData) {
+				const clicky = document.querySelector('#clicky a');
+				clicky.href = giscusData.discussion.url;
+				clicky.style.display = "";
+				window.removeEventListener('message', injectClicky);
+			}
+		}
+		window.addEventListener('message', injectClicky);
+	</script>
+	<script src="https://giscus.app/client.js"
+		data-repo="zephyrtronium/zephyrtronium.github.io"
+		data-repo-id="MDEwOlJlcG9zaXRvcnkyNjEwNDIxNTQ="
+		data-category="Announcements"
+		data-category-id="DIC_kwDOD48v6s4B_JuI"
+		data-mapping="og:title"
+		data-reactions-enabled="1"
+		data-emit-metadata="1"
+		data-theme="https://zephyrtronium.github.io/style/giscus.css"
+		crossorigin="anonymous"
+		async>
+	</script>
+	
+<hr>
+<footer>
+	<p>
+	
+	Tagged: programming language, types<br/>
+	
+		My blog uses <a href="https://github.com/oxalorg/sakura" target="_blank" rel="noreferrer noopener">sakura</a>, a classless CSS framework.
+		<br/>
+		Except as otherwise indicated, all content is Copyright 2023 Branden J Brown and is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
+		<br/>
+		<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>
+	</p>
+</footer>
+
+</body>
