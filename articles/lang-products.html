@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<head>
+	
+<link rel="stylesheet" href="/style/normalize.css" type="text/css">
+<link rel="stylesheet" href="/style/sakura.css" type="text/css">
+<link rel="stylesheet" href="/style/zephyrtronium.css" type="text/css">
+<link rel="alternate" href="/weblog.atom" type="application/atom+xml">
+<meta property="og:site_name" content="zephyrtronium" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+	<title>Product Expressions | zephyrtronium</title>
+	<meta property="og:title" content="Product Expressions" />
+	<meta property="og:description" content="Unlocking hidden powers of structs and tuples." />
+</head>
+<body>
+	<header>
+		<h3><a href="/">zephyrtronium</a></h3>
+	</header>
+	<hr>
+	<article>
+		<h1>Product Expressions</h1>
+		
+		<div class="subtitle">
+			<p class="chapter">in Thoughts on a Programming Language</p>
+			<p class="date">on Sun, 28 Apr 2024</p>
+		</div>
+		
+		
+<a class="permalink" href="#1."><h2 id="1.">I Guess We Do Need Syntax</h2></a>
+<p>We established product type (i.e. struct and tuple) syntax quite a few thoughts ago <a href="/articles/lang.html#4.1." target="_blank" rel="noopener">in the exposition</a>.
+Let's get around to coming up with a syntax for expressions of product types.</p>
+<p>This is actually a bit more involved than for most other programming languages.
+We have both &quot;struct&quot; and &quot;tuple&quot; types, but we don't distinguish them syntactically – a tuple is just a struct with field names like <code>.0</code>, <code>.1</code>, &amp;c.</p>
+<p>However, we'd still like to be able to construct product values without having to name every field.
+The usual <code>(bocchi, ryou)</code> syntax is probably what we want for that.
+Simply assign each field in named order.
+Then we can do a less-usual extension of that for struct-y syntax, like <code>(.0 = bocchi, .1 = ryou)</code>.</p>
+<p>What about products with fields that are inaccessible due to encapsulation?
+I think it's preferable to completely disallow the tuple-like syntax there, rather than allowing unexported names to be filled in where they can be inferred.</p>
+<p>If we take these spellings for struct and tuple types, then we can easily write function application as <code>f x</code> in the usual functional programming way.
+Then if we have inference for tuple literals, we can also write <code>f(bocchi, ryou)</code> to make function application look like the usual <em>procedural</em> way as well.</p>
+<p>We also get named arguments for free.
+<code>f(bocchi, ryou)</code> would be identical to <code>f(.1 = ryou, .0 = bocchi)</code>, or if <code>f : (* .x: U * .y: V) -&gt; W</code> instead then we can write <code>f(.y = ryou, .x = bocchi)</code>.</p>
+<p>Combined with the visibility rule, this does imply that functions generally want to use exported names for their arguments.
+It's unusual among programming languages for this to matter.
+On the other hand, it implies we have <em>unexported</em> arguments, which prevent calling a function unless those arguments can be supplied some other way.
+That idea is pretty intriguing.</p>
+<p>An option we can consider to lean into that is to allow intersecting product types.
+If <code>x: (*.0: U)</code> and <code>y : V</code>, we allow writing, say, <code>let z = x &amp; (.1 = y)</code> to create <code>z : (*.0: U *.1: V)</code>.
+That lets us pass around a tuple representing &quot;partially applied&quot; and possibly unexported arguments to a function, then intersect with a struct of the remaining arguments to finally call it.</p>
+<p>Hypothetically, we could even implement closures that way.
+Just make them be a pair containing the function to call and its captured variables.
+Not sure what that actually buys us, though.
+Closures should be easy to write and use, so we'd need syntactic support for treating them this way anyway.</p>
+
+
+	</article>
+	<div id="clicky"><a style="display:none;" href="#">Click here to comment on GitHub!</a></div>
+	<script>
+		function injectClicky(event) {
+			if (event.origin !== 'https://giscus.app') return;
+			if (!(typeof event.data === 'object' && event.data.giscus)) return;
+			const giscusData = event.data.giscus;
+			if ('discussion' in giscusData) {
+				const clicky = document.querySelector('#clicky a');
+				clicky.href = giscusData.discussion.url;
+				clicky.style.display = "";
+				window.removeEventListener('message', injectClicky);
+			}
+		}
+		window.addEventListener('message', injectClicky);
+	</script>
+	<script src="https://giscus.app/client.js"
+		data-repo="zephyrtronium/zephyrtronium.github.io"
+		data-repo-id="MDEwOlJlcG9zaXRvcnkyNjEwNDIxNTQ="
+		data-category="Announcements"
+		data-category-id="DIC_kwDOD48v6s4B_JuI"
+		data-mapping="og:title"
+		data-reactions-enabled="1"
+		data-emit-metadata="1"
+		data-theme="https://zephyrtronium.github.io/style/giscus.css"
+		crossorigin="anonymous"
+		async>
+	</script>
+	
+<hr>
+<footer>
+	<p>
+	
+	Tagged: programming language, types<br/>
+	
+		My blog uses <a href="https://github.com/oxalorg/sakura" target="_blank" rel="noreferrer noopener">sakura</a>, a classless CSS framework.
+		<br/>
+		Except as otherwise indicated, all content is Copyright 2023 Branden J Brown and is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
+		<br/>
+		<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>
+	</p>
+</footer>
+
+</body>
