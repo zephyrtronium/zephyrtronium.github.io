@@ -46,20 +46,20 @@ It's entirely missing the point.</p>
 Haskell is as different from Rust as general relativity is from quantum physics.
 It isn't just a different <em>approach</em> to programming, it's a different <em>foundation</em> to programming.</p>
 <p>Moderately educated programmers generally seem to be aware that functional programming inherits from lambda calculus.
-What they don't usually seem to be aware of is that in (untyped or simply typed) lambda calculus, there is <em>nothing</em> that is not a function.</p>
+What they don't usually seem to be aware of is that in (untyped or simply typed) lambda calculus, <a href="https://en.wikipedia.org/wiki/Church_encoding" target="_blank" rel="noopener">there is <em>nothing</em> that is not a function</a>.</p>
 <p><code>true</code> is the function <code>true(x) ↦ (g(y) ↦ x)</code>, i.e. &quot;true takes <code>x</code> and evaluates to a function which takes <code>y</code> and returns <code>x</code>.&quot;
 (The symbol ↦ is read &quot;maps to.&quot; Think &quot;map&quot; roughly as in &quot;hash map&quot; here.)
 Note that the <code>x</code> and <code>y</code> that <code>true</code> and its computed closure take <em>are also functions</em>.</p>
 <p>3 is the function <code>3(f) ↦ (g(x) ↦ f(f(f(x))))</code>, or &quot;3 takes an <code>f</code> and evaluates to a new function that composes <code>f</code> three times.&quot;
 I could specify that <code>f</code> has to be a function in order to be so composed, but there's nothing else it could be.
 Lambda calculus <em>only</em> has functions.</p>
-<p>Granted, most functional programming languages are derived from extensions to simply typed lambda calculus that add ideas which cannot be described purely as functions.
-I think it's more precise to describe functional programming languages as those <a href="https://www.youtube.com/watch?v=IOiZatlZtGU" target="_blank" rel="noopener">founded on systems of logic</a>.</p>
 <p>When I think about functional programming, I think about lambda calculus, logic, and category theory.
 I don't think about map, reduce, and filter.
 Those are just structures that arise when considering computation from this foundation.</p>
 <p>I like to call the &quot;everything is immutable, but not everything is purely a logical structure&quot; approach of languages like Erlang, Elixir, or Gleam <em>immutable programming</em>.
 They share with functional programming the characteristic that everything is immutable, but that's about where the similarities end.</p>
+<p>Granted, most functional programming languages are derived from extensions to simply typed lambda calculus that add ideas which cannot be described purely as functions.
+I think it's more precise to describe functional programming languages as those <a href="https://www.youtube.com/watch?v=IOiZatlZtGU" target="_blank" rel="noopener">founded on systems of logic</a>.</p>
 
 
 <a class="permalink" href="#3."><h2 id="3.">Immutable Programming is Good</h2></a>
