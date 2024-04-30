@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom">
   <title>zephyrtronium</title>
   <id>https://zephyrtronium.github.io/</id>
-  <updated>2024-04-28T22:18:18-05:00</updated>
+  <updated>2024-04-29T20:11:31-05:00</updated>
   <subtitle>correct opinions about types, go, capital letters, &amp;c.</subtitle>
   <link href="https://zephyrtronium.github.io/"></link>
   <author>
@@ -124,6 +124,17 @@
     <id>https://zephyrtronium.github.io/articles/lang-products.html</id>
     <link href="https://zephyrtronium.github.io/articles/lang-products.html" rel="alternate"></link>
     <summary type="html">Unlocking hidden powers of structs and tuples.</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+  <entry>
+    <title>Pieces of Programs</title>
+    <updated>2024-04-29T11:00:00Z</updated>
+    <id>https://zephyrtronium.github.io/articles/lang-modules.html</id>
+    <link href="https://zephyrtronium.github.io/articles/lang-modules.html" rel="alternate"></link>
+    <summary type="html">On the mechanics of program modularization.</summary>
     <author>
       <name>zephyrtronium</name>
       <email>zephyrtronium@hey.com</email>

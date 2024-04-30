@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<head>
+	
+<link rel="stylesheet" href="/style/normalize.css" type="text/css">
+<link rel="stylesheet" href="/style/sakura.css" type="text/css">
+<link rel="stylesheet" href="/style/zephyrtronium.css" type="text/css">
+<link rel="alternate" href="/weblog.atom" type="application/atom+xml">
+<meta property="og:site_name" content="zephyrtronium" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+	<title>Pieces of Programs | zephyrtronium</title>
+	<meta property="og:title" content="Pieces of Programs" />
+	<meta property="og:description" content="On the mechanics of program modularization." />
+</head>
+<body>
+	<header>
+		<h3><a href="/">zephyrtronium</a></h3>
+	</header>
+	<hr>
+	<article>
+		<h1>Pieces of Programs</h1>
+		
+		<div class="subtitle">
+			<p class="chapter">in Thoughts on a Programming Language</p>
+			<p class="date">on Mon, 29 Apr 2024</p>
+		</div>
+		
+		
+<a class="permalink" href="#1."><h2 id="1.">Modules, or Packages, or Crates, or …</h2></a>
+<p>Rust calls it a module; a crate is a collection of modules.
+F# calls it a module; an assembly is a collection of modules.
+Python calls it a module; a package is a collection of modules.
+Go calls it a package; a module is a collection of packages.</p>
+<p>?????</p>
+<p>So yeah, I have been thinking about the fundamental unit of source code organization for ligma lang.
+In particular, I have been thinking about two mutually exclusive ideas with how <em>scope</em> works in the context of this unit of organization.</p>
+<p>In Go, with some exceptions, packages are in one-to-one correspondence with directories.
+All files in a package can reference all definitions in the package, regardless of where they are.
+This includes even defining methods on types in other files, or in the same file but before the type is defined.
+And in practice, that actually matters: code generators can be very simple, with no need to understand syntax at all.</p>
+<p>F# does almost the opposite.
+Modules are individual files (except they can contain nested modules), and you can't make forward references.
+That means declaration order matters strongly, and you have to use special tricks to create mutually recursive types.
+It also means that a reader can easily find the source of any declaration (if we ignore <code>AutoOpen</code>).
+Type checking is also much simpler under this model.</p>
+
+
+<a class="permalink" href="#2."><h2 id="2.">And Us?</h2></a>
+<p>I like both of those approaches.
+But, like I said, they're mutually exclusive.</p>
+<p>Maybe we can think of a compromise.
+We could try the F# approach plus a rule like &quot;modules in the same directory are implicitly imported.&quot;
+You'd still have to qualify their names, but we keep the lexical precedence property.</p>
+<p>I think we'd also want &quot;modules in the same directory can access each others' <a href="/articles/lang-encapsulation.html" target="_blank" rel="noopener">unexported identifiers</a>.
+E.g., if bocchi.lig and ryou.lig are in the same directoyr, and ryou.lig defines some unexported identifier <code>nijika</code>, then bocchi.lig can write <code>ryou nijika</code> to access it.
+And this is without an explicit import of <code>ryou</code>.</p>
+<p>This seems a bit verbose, but maybe it's ok.</p>
+<p>As for mutually recursive definitions, there are a few options.
+Like F#, we could define a keyword that specifically creates a mutually recursive scope.
+Honestly, that feels unpleasantly ad hoc to me.</p>
+<p>Another option is to simply allow definitions to refer to each other in the same module.
+We always type check in multiple passes.
+Perhaps a bit more complicated to implement, and we lose strict lexical precedence, but we can at least see when something is defined in the same file.</p>
+<p>An option in the opposite direction is to do nothing here, require strict lexical precedence and also provide nothing for mutual recursion.
+When you need it, you can simulate it by adding parameters, of either the type or formal variety.
+I think that's probably a bit too constricting to work with, but it's plausible.</p>
+<p>Honestly, the Go approach holds a lot of draw for me.
+It's very easy to <em>just start writing code</em>.
+Even though I've felt the penalties of unrestricted reference within a package many times while reading other peoples' code online, I find it very pleasant to actually do work with.</p>
+<p>But I think something along the lines of the F# approach is probably <em>better</em>.
+I'm still not certain which decision is more correcter.</p>
+<p>At the very least, I am convinced that the correct terminology for ligma lang is that a <em>package</em> contains one or more <em>modules</em>.</p>
+
+
+	</article>
+	<div id="clicky"><a style="display:none;" href="#">Click here to comment on GitHub!</a></div>
+	<script>
+		function injectClicky(event) {
+			if (event.origin !== 'https://giscus.app') return;
+			if (!(typeof event.data === 'object' && event.data.giscus)) return;
+			const giscusData = event.data.giscus;
+			if ('discussion' in giscusData) {
+				const clicky = document.querySelector('#clicky a');
+				clicky.href = giscusData.discussion.url;
+				clicky.style.display = "";
+				window.removeEventListener('message', injectClicky);
+			}
+		}
+		window.addEventListener('message', injectClicky);
+	</script>
+	<script src="https://giscus.app/client.js"
+		data-repo="zephyrtronium/zephyrtronium.github.io"
+		data-repo-id="MDEwOlJlcG9zaXRvcnkyNjEwNDIxNTQ="
+		data-category="Announcements"
+		data-category-id="DIC_kwDOD48v6s4B_JuI"
+		data-mapping="og:title"
+		data-reactions-enabled="1"
+		data-emit-metadata="1"
+		data-theme="https://zephyrtronium.github.io/style/giscus.css"
+		crossorigin="anonymous"
+		async>
+	</script>
+	
+<hr>
+<footer>
+	<p>
+	
+	Tagged: programming language, types<br/>
+	
+		My blog uses <a href="https://github.com/oxalorg/sakura" target="_blank" rel="noreferrer noopener">sakura</a>, a classless CSS framework.
+		<br/>
+		Except as otherwise indicated, all content is Copyright 2023 Branden J Brown and is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
+		<br/>
+		<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>
+	</p>
+</footer>
+
+</body>
