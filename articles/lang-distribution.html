@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<head>
+	
+<link rel="stylesheet" href="/style/normalize.css" type="text/css">
+<link rel="stylesheet" href="/style/sakura.css" type="text/css">
+<link rel="stylesheet" href="/style/zephyrtronium.css" type="text/css">
+<link rel="alternate" href="/weblog.atom" type="application/atom+xml">
+<meta property="og:site_name" content="zephyrtronium" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+	<title>Distributing Packages | zephyrtronium</title>
+	<meta property="og:title" content="Distributing Packages" />
+	<meta property="og:description" content="I&#39;ve come up with the most sane and sustainable way to distribute packages." />
+</head>
+<body>
+	<header>
+		<h3><a href="/">zephyrtronium</a></h3>
+	</header>
+	<hr>
+	<article>
+		<h1>Distributing Packages</h1>
+		
+		<div class="subtitle">
+			<p class="chapter">in Thoughts on a Programming Language</p>
+			<p class="date">on Tue, 30 Apr 2024</p>
+		</div>
+		
+		
+<a class="permalink" href="#1."><h2 id="1.">Requirements</h2></a>
+<p>Let's revisit our <a href="/articles/lang.html#11." target="_blank" rel="noopener">list of wants</a> for dependency management:</p>
+<ul>
+<li>Package identity must not be tied to location</li>
+<li>Namespaces</li>
+<li>Fast resolution</li>
+<li>Cryptographically signed SBOMs</li>
+</ul>
+<p>After thinking about it, I do have a couple items of my own to add to this list:</p>
+<ul>
+<li>Version updates, including new major versions, are easily discoverable</li>
+<li><em>Forks</em> are easily discoverable</li>
+<li>Repository independence: Git is not the only version control system</li>
+</ul>
+<p>I want to explicitly add version updates because I think they are a direct technical challenge with the obvious ways to meet SegFault's wishlist.
+And while Git is good, it probably won't be the best option forever.
+(I still mean to try <a href="https://github.com/martinvonz/jj" target="_blank" rel="noopener">jujutsu</a> at some point.)</p>
+<p>Thinking about how to meet these requirements gave me a really very idea.
+It is definitely not thoroughly deranged, and I can be trusted with your version updates.</p>
+<p>What if we put versions on a blockchain?</p>
+<p>To be clear, what I am suggesting has <strong>absolutely nothing to do with cryptocurrency</strong>.
+Blockchain is an algorithm.
+It's a technical solution that matches up well with certain (very specific) technical problems.
+(A Git repository is a kind of blockchain!)
+The <a href="https://web3isgoinggreat.com/" target="_blank" rel="noopener">astonishing harm that comes from cryptocurrency</a> is associated with insistence on using a technical solution for <em>social</em> problems.</p>
+<p>So, why blockchain here?
+Publishing version updates to a blockchain means we never need any central hosting solution.
+Hypothetically, all you need is an internet connection and a cryptographic identity to publish – no one needs to know who you are.
+Both finding source locations and checking for updates amount to reductions of the blockchain.
+Publishing may be slow, but resolving should be fast once the blockchain is downloaded.
+It's easy to choose a representation for nodes that encodes all the other properties we want, as well.</p>
+
+
+<a class="permalink" href="#2."><h2 id="2.">Seriously??</h2></a>
+<p>Ok, you got me.
+I think finding potential applications of blockchain that aren't horrifically toxic is fun and interesting.
+Is it actually a reasonable solution to versioning and dependency management?
+Probably not.</p>
+<p>For one thing, consensus is hard.
+Any incentive-based consensus algorithm, well, incentivizes people to abuse it.
+Probably the most viable approach for what we'd want would be proof-of-authority, which as I understand it amounts to giving a list of who is allowed to append to the blockchain.
+Hard to call that decentralized.</p>
+<p>And if we don't choose PoA, then whatever &quot;proof&quot; we require to publish can presumably be offered in vast quantities by anyone with enough money.
+As just a lil guy, it's almost impossible to prevent supply chain attacks that way.</p>
+<p>Furthermore, if we want to make a reasonable effort to enforce the blockchain's use for package versioning, then we likely need every potential verifier to download every potential published version of every package.
+That could become a huge amount of traffic.
+SourceHut once got to the verge of <a href="https://sourcehut.org/blog/2023-01-09-gomodulemirror/" target="_blank" rel="noopener">blocking the Go module proxy</a> over similar concerns.</p>
+<p>So, the blockchain is out.
+As it almost always should be.</p>
+<p>Probably a central service in the style of crates.io, npm, &amp;c. will remain the way to go.
+I'd like to find a different solution, but it's hard to imagine one that meets all our goals without tying package identity to package location.</p>
+<hr>
+
+
+<a class="permalink" href="#3."><h2 id="3.">An aside</h2></a>
+<p>As much as I've been enjoying writing Thoughts on a Programming Language, I find myself in a position where I need to prepare for getting a new job.
+I'm still converting thoughts I've already written to weblog format, but each one takes multiple hours that I should be spending on practicing my coding challenge pattern recognition.</p>
+<p>So, ligma lang is going to have to sit on the shelf for a bit.
+I will still try to write thoughts daily, since this is also useful communication practice, but I won't try to publish very often.</p>
+
+
+	</article>
+	<div id="clicky"><a style="display:none;" href="#">Click here to comment on GitHub!</a></div>
+	<script>
+		function injectClicky(event) {
+			if (event.origin !== 'https://giscus.app') return;
+			if (!(typeof event.data === 'object' && event.data.giscus)) return;
+			const giscusData = event.data.giscus;
+			if ('discussion' in giscusData) {
+				const clicky = document.querySelector('#clicky a');
+				clicky.href = giscusData.discussion.url;
+				clicky.style.display = "";
+				window.removeEventListener('message', injectClicky);
+			}
+		}
+		window.addEventListener('message', injectClicky);
+	</script>
+	<script src="https://giscus.app/client.js"
+		data-repo="zephyrtronium/zephyrtronium.github.io"
+		data-repo-id="MDEwOlJlcG9zaXRvcnkyNjEwNDIxNTQ="
+		data-category="Announcements"
+		data-category-id="DIC_kwDOD48v6s4B_JuI"
+		data-mapping="og:title"
+		data-reactions-enabled="1"
+		data-emit-metadata="1"
+		data-theme="https://zephyrtronium.github.io/style/giscus.css"
+		crossorigin="anonymous"
+		async>
+	</script>
+	
+<hr>
+<footer>
+	<p>
+	
+	Tagged: programming language, types<br/>
+	
+		My blog uses <a href="https://github.com/oxalorg/sakura" target="_blank" rel="noreferrer noopener">sakura</a>, a classless CSS framework.
+		<br/>
+		Except as otherwise indicated, all content is Copyright 2024 Branden J Brown and is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
+		<br/>
+		<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>
+	</p>
+</footer>
+
+</body>
