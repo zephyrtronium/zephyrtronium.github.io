@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<head>
+	
+<link rel="stylesheet" href="/style/normalize.css" type="text/css">
+<link rel="stylesheet" href="/style/sakura.css" type="text/css">
+<link rel="stylesheet" href="/style/zephyrtronium.css" type="text/css">
+<link rel="alternate" href="/weblog.atom" type="application/atom+xml">
+<meta property="og:site_name" content="zephyrtronium" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+	<title>The Koka Experience | zephyrtronium</title>
+	<meta property="og:title" content="The Koka Experience" />
+	<meta property="og:description" content="An experience report on the Koka programming language." />
+</head>
+<body>
+	<header>
+		<h3><a href="/">zephyrtronium</a></h3>
+	</header>
+	<hr>
+	<article>
+		<h1>The Koka Experience</h1>
+		
+		<div class="subtitle">
+			<p class="chapter">in Koka</p>
+			<p class="date">on Fri, 17 May 2024</p>
+		</div>
+		
+		
+<a class="permalink" href="#1."><h2 id="1.">Background</h2></a>
+<p>After repeatedly discovering that my Good Ideas for <a href="/articles/lang.html" target="_blank" rel="noopener">the programming language I wish I were writing</a> were actually reinventions of things that Koka is already doing, I decided to try using it for a bit.</p>
+<p><a href="https://koka-lang.github.io/koka/doc/index.html" target="_blank" rel="noopener">Koka</a> is a functional programming language designed around <em>effects</em>, a type kind (in the formal sense of &quot;kind&quot;) which allows functions to describe the kinds of side effects they have.
+Despite being functional, mutability is a first-class concept; functions that write to or read from variables they're given have these operations mentioned in their effects.
+Other effects might describe functions which might not terminate, or functions that can raise exceptions, or even programmer-defined nonlinear control flow.</p>
+<p>I have some prior experience with older functional programming languages, but I'm definitely not an expert.
+I've never used Haskell &quot;in production,&quot; and while I do try to read some type theory research, most of it is still beyond me.
+Despite that, Koka has been surprisingly accessible to me as a primarily Go programmer.</p>
+<p>That said, Koka is very much an in-progress research language.
+I've encountered a lot of questions that I didn't find answered in documentation, and certainly not in the Koka book.
+(Probably more than a few are answered, just not where I've looked so far.)
+I'm at the point where I want to start collecting those questions as a guide to places that could be improved.</p>
+<p>This report will equally cover experiences with the language itself and with the tooling installed in VS Code by the Koka extension, including the language server.
+I'll leave sorting out the details of what applies to which to those more expert.</p>
+<p>For context, the things I've tried writing so far have been:</p>
+<ul>
+<li>An interpreter for the Io programming language.
+I made almost no progress on this one, for a number of reasons.</li>
+<li>A JSON parser using the std/text/parse parser combinator library.
+This one I mostly finished.
+It was while trying to answer questions about this that I found the <a href="https://github.com/koka-community" target="_blank" rel="noopener">koka-community</a> GitHub organization, which helped me find answers to many other questions.</li>
+<li>A generic hashmap, since I couldn't find one at the time (since spotted in a <a href="https://github.com/koka-community/std/pull/3" target="_blank" rel="noopener">koka-community/std PR</a>) and it's a crucial component of an Io interpreter.
+Finished aside from some important helpers.</li>
+</ul>
+<p>The only materials I used to learn Koka before writing code were <a href="https://koka-lang.github.io/koka/doc/book.html" target="_blank" rel="noopener">the book</a> and the first half or so of each of the <a href="https://arxiv.org/pdf/1406.2061" target="_blank" rel="noopener">row-polymorphic effects</a> and <a href="https://www.microsoft.com/en-us/research/uploads/prod/2020/11/perceus-tr-v1.pdf" target="_blank" rel="noopener">Perceus</a> papers.</p>
+
+
+<a class="permalink" href="#2."><h2 id="2.">Syntax</h2></a>
+
+<a class="permalink" href="#2.1."><h3 id="2.1.">Inconvenciences</h3></a>
+<p>VS Code's syntax highlighting always treats <code>&lt;</code> and <code>&gt;</code> as brackets, even when they're part of <code>&lt;-</code> and <code>-&gt;</code> tokens.
+That leaves them almost always mismatched, which is filling my hashmap module with red marks, even though it has no errors.</p>
+<p>Having both <code>val</code> and <code>value</code> as keywords makes writing a generic container a bit awkward.
+(Maybe <code>value</code> isn't actually a reserved word, though?)
+Even though Koka lets me use <code>v</code> as both a type name and a variable name, I still prefer to keep them separate.</p>
+<p>Related: it is <em>very cool</em> that type and variable namespaces are separated syntactically.
+Also very cool that type parameters can be implicit as a result.</p>
+
+
+<a class="permalink" href="#2.2."><h3 id="2.2."><code>abstract</code></h3></a>
+<p>What exactly does the <code>abstract</code> annotation on types do?
+I saw a description of it… somewhere, but now I can't find it.
+The grammar indicates that it's mutually exclusive with the <code>pub</code> visibility modifier, so is it also a visibility modifier?
+I seem to recall that it has something to do with supressing automatically generated functions relating to a type definition.</p>
+
+
+<a class="permalink" href="#2.3."><h3 id="2.3.">Killing the parser</h3></a>
+<p>I tried writing a nested loop over a vector of lists of pairs as the following:</p>
+<pre><code>pub fun foreach(hm: hmap&lt;k, v&gt;, action: (k, v) -&gt; e ()): e ()
+  with bu &lt;- hm.buckets.foreach
+  with (key, el) &lt;- bu.foreach
+  action(key, el)
+</code></pre>
+<p>Apparently this was explosive.
+The language server stopped reporting any errors at all, even obvious syntax errors.
+If I load the module in the interpreter like this, I get a stack trace that doesn't mention my code anywhere:</p>
+<pre><code>parse   : c:/Users/zephyr/Documents/mykk/hmap/hmap.kk
+check   : hmap
+^
+hmap(1, 1): internal error: Syntax.Parse.parameter: unexpected function expression in parameter match transform
+CallStack (from HasCallStack):
+  error, called at src\Common\Failure.hs:46:12 in koka-3.1.1-4KWDIhobz6XJ1Dhpw9I5uN:Common.Failure
+  raise, called at src\Common\Failure.hs:32:5 in koka-3.1.1-4KWDIhobz6XJ1Dhpw9I5uN:Common.Failure
+  failure, called at src\Syntax\Parse.hs:1443:37 in koka-3.1.1-4KWDIhobz6XJ1Dhpw9I5uN:Syntax.Parse
+</code></pre>
+<p>It seems that the problem is that patterns can't appear to the left of <code>&lt;-</code>.
+That's fine by itself.
+The experiential complaint is that the language server silently went dark as a result.
+It'd be nice if it could at least inform me that it couldn't parse the module due to an internal error, ideally with a line number.</p>
+
+
+<a class="permalink" href="#2.4."><h3 id="2.4.">Caret</h3></a>
+<p>A number of functions in std have parameters with names prefixed by <code>^</code>.
+In at least one case, it's composed with <code>?</code> for an implicit parameter.</p>
+<p>I have no idea what <code>^</code> means.
+Sometimes the documentation on functions bearing it contains what appear to be error messages, though!</p>
+<p>More broadly, there seems to be a small syntax for doc comments.
+Info on that would be great.
+And also info on the documentation system in general; I actually quite like the std docs site.</p>
+
+
+
+<a class="permalink" href="#3."><h2 id="3.">Semantics</h2></a>
+
+<a class="permalink" href="#3.1."><h3 id="3.1.">Partial type checking</h3></a>
+<p>Probably the single thing that would most improve my experience with Koka would be partial type checking in the language server.
+As it is, type information in VS Code reflects the last time your module was entirely free of errors.
+That means that, in general, you can't check the types of values you're working with while writing a new function.</p>
+
+
+<a class="permalink" href="#3.2."><h3 id="3.2.">Corecursion</h3></a>
+<p>As I mentioned at the start, I'm not strongly versed in type theory.
+I don't really understand what a coinductive type is.
+The only example I have ever seen is &quot;the type of possibly infinite streams,&quot; and Koka continues that trend.</p>
+<p>What else can a cotype represent?
+I believe inductive types interact nicely with divergence checking; how do cotypes interact with effect inference?
+Why would I choose cotypes over fully recursive types?</p>
+
+
+<a class="permalink" href="#3.3."><h3 id="3.3.">Divergence checking</h3></a>
+<p>I'm not sure where to find a formal description of the divergence checking algorithm.
+Since totality makes the most general API, understanding the decisions that can prevent it can lead to better designs.</p>
+<p>If I were to guess at the div inference algorithm now, it would be something like,
+&quot;A recursive function is divergent unless at least one parameter is inductive and at least one inductive argument is structurally reduced by pattern matching.&quot;
+I'm certain that's incomplete, though.
+Immediately, it doesn't account for closures passed as argument which might dynamically produce recursion.</p>
+
+
+<a class="permalink" href="#3.4."><h3 id="3.4.">Return</h3></a>
+<p>This is probably something I could resolve myself with a reread of the Koka book, but knowing that blocks are syntactic sugar for closures actually makes <code>return</code> control flow a bit confusing for me.
+A couple times now, I have written foreaches or mappings that could have used an early return to simplify the body, but since I'm a bit unclear on that interaction, I chose more verbose forms instead.</p>
+
+
+<a class="permalink" href="#3.5."><h3 id="3.5.">Conditional effects</h3></a>
+<p>There are situations where a &quot;hash&quot; function <a href="https://research.swtch.com/randhash" target="_blank" rel="noopener">should be non-deterministic</a>.
+In Koka, non-determinism is explicitly tracked with the <code>ndet</code> effect.
+So, if I want my hashmap to use a non-deterministic hash function for floating-point keys, I have to mark <em>every</em> operation on the hashmap ndet, for every type.
+Alternatively, I could make the effects polymorphic, but then they can introduce any effects, when really I just want &quot;either ndet or total.&quot;</p>
+<p>I don't think there's a way to express this kind of constraint.
+Moreover, I think that's fine.
+Allowing conditional effects sounds like an easy way to bump up the complexity class of type inference.
+It just happens to be inconvenient for this particular case.</p>
+<p>I think the correct solution in this case is to duplicate the hashmap methods for ndet versions.
+If float64's hash function is itself ndet, then it won't work in the versions that expect total hashes.</p>
+
+
+<a class="permalink" href="#3.6."><h3 id="3.6.">Extensible data types</h3></a>
+<p>One of the challenges I encountered when starting an Io interpreter was the representation of primitive data.
+Io is an &quot;everything is an object&quot; language, with many objects carrying a primitive value representing anything from a number to a list to a file descriptor.
+In proper Io, it's also possible to load extensions from shared libraries that add new primitive types dynamically.</p>
+<p>I'd rather not try to enumerate every possible primitive type as a constructor in a sum type.
+But if I don't do that, then I'm not sure how to represent this situation in Koka.</p>
+<p>The Koka book has a section about &quot;extensible data types,&quot; which sounds like what I want.
+Unfortunately, its entire contents are &quot;Todo.&quot;
+The grammar also mentions <code>open</code> and <code>extend</code> terms, which I imagine relate to said extensible data types, but I haven't seen any use of them.</p>
+
+
+
+<a class="permalink" href="#4."><h2 id="4.">Standard library</h2></a>
+
+<a class="permalink" href="#4.1."><h3 id="4.1.">Documentation</h3></a>
+<p>The standard library's documentation is extremely thin.
+Some modules have no documentation at all.
+Most that do have a single sentence.</p>
+<p>After partial type checking, I think thorough documentation on std would be one of the biggest wins for the writeability of Koka.
+And fortunately, it's a much easier thing to do.</p>
+
+
+<a class="permalink" href="#4.2."><h3 id="4.2.">The red-black tree</h3></a>
+<p>Red-black trees are a frequent subject of examples relating to Koka's garbage collection system, Perceus.
+However, while it's provided (twice) as a sample, it isn't actually in std.
+It'd be nice to have it there as well.</p>
+<p>Actually, there are <em>no</em> polymorphic data structures that require operations over their elements.
+That would be a good way to show how to use implicits in a more relevant context than the syntax examples.</p>
+
+
+<a class="permalink" href="#4.3."><h3 id="4.3.">List and sslice</h3></a>
+<p>At least while code was in progress, I noticed that type inference <em>very</em> frequently failed to choose between list and sslice functions, even when chained on values that were explicitly annotated as lists.
+Usually those errors went away as I progressed further through the function I was writing.
+However, when combined with the lack of partial type checking, I either have to write the explicit qualification or fly blind for a bit.
+As a proponent of autocomplete-oriented programming, the latter is an unpleasant situation for me</p>
+<p>A similar situation arises with tuple accessors when the tuple arity is hidden behind parametric types.
+One instance resisted correct inference through the completion of my hashmap module.</p>
+
+
+
+<a class="permalink" href="#5."><h2 id="5.">Best practices</h2></a>
+<ul>
+<li>what is the representation of strings? utf-8? codepoint array?</li>
+<li>best practices for tests? there are some examples in places, and an (undocumented) std/test module; still need to check them. by any chance, is property-based testing on the roadmap?</li>
+<li>are vectors able to take advantage of perceus-related optimizations, e.g. if i want to replace a single element?</li>
+<li>it seems like implicits are the main approach for polymorphic types, but istm that effects could be used as well for this. is one way strictly better?</li>
+</ul>
+
+<a class="permalink" href="#5.1."><h3 id="5.1."><code>inline</code></h3></a>
+<p>Another undocumented keyword is <code>inline</code>.
+I spotted some uses of it in koka-community packages and tried tossing it around in my code.
+But I'm not sure how the compiler treats functions marked inline.</p>
+<p>There are a few things that manual inline markers might indicate to a compiler.
+In C and C++, advanced compilers generally make their own inlining decisions, and the inline keyword mostly serves to require that the function body exist in the same compilation unit.
+For the most part, that's the mental model I have for it, but I don't think that makes much sense in Koka.</p>
+<p>Should I be using <code>inline</code> for small functions?
+Should I be using it at all?</p>
+
+
+<a class="permalink" href="#5.2."><h3 id="5.2."><code>fip</code> and <code>fbip</code></h3></a>
+<p>There are multiple papers about &quot;functional but in-place&quot; programming in Koka.
+Part of supporting this are the <code>fip</code> and <code>fbip</code> keywords to force a function to be written in functional but in-place style.</p>
+<p>Should I always be marking my functions as <code>fip</code> or <code>fbip</code> when possible?
+Is there any downside, other than the restrictions it introduces?
+Intuitively, it seems like it would infect the API: someone else's <code>fip</code> function that depends on mine breaks if I make mine no longer <code>fip</code>.</p>
+<p>Even so, I haven't actually found an opportunity to use these markers.
+Any use of an argument function or almost any effect seems to immediately preclude them.
+Also any use of any std function, since none of them are so marked.</p>
+<p>Also, I'm a bit surprised that they're function declaration markers and not just effects, in the language about effects.
+I assume there's a reason for that.
+The FP² paper is still in my backlog, though.</p>
+
+
+<a class="permalink" href="#5.3."><h3 id="5.3.">Tests</h3></a>
+<p>There are some instances of what appear to be automated tests in std and koka-community/std.
+They import an undocumented std/test module (I learned after writing most of this report that this is itself in koka-community/std).</p>
+<p>This is another place where I can probably answer my own questions with a bit of reading.
+Some explicit guidance on testing, or at least documentation on std/test, would be very helpful, though.
+And given the tests I glanced at, it seems like a lot is left to the programmer; a more formal framework would also be a major win.</p>
+<p>I do wonder whether property-based testing is on anyone's roadmap.</p>
+
+
+<a class="permalink" href="#5.4."><h3 id="5.4.">Vectors</h3></a>
+<p>Hashmaps require O(1) indexing of dynamically sized arrays, and it seems like the only way to get that in base Koka is with vectors.
+However, I'm not familiar with the performance characteristics of vectors in functional programming languages.
+If I'm copying the entire vector every time I update a bucket, then I can't provide O(1) insert.
+And, notably, I did have to implement my own <code>replace</code> function to do this, so I suspect that's what's happening.</p>
+<p>Of course, one of the major draws of Koka is the functional but in-place paradigm.
+Does that work with vectors?
+I think that would require that every cell of the vector be reference-counted separately, which doesn't sound like the obvious implementation.</p>
+
+
+<a class="permalink" href="#5.5."><h3 id="5.5.">Implicits versus effects</h3></a>
+<p>It seems like the standard way to implement generic containers with operations on elements is to use implicits.
+I'm accustomed to bounded parametric polymorphism, so it took me a while to find out about implicits (also not mentioned in the Koka book), but it wasn't hard to adjust to them.</p>
+<p>Before I learned about implicits, I tried a different approach: a polymorphic effect.</p>
+<pre><code>effect hash&lt;k&gt;
+  fun hash(key: k): int64
+  fun eq(k1: k, k2: k): bool
+</code></pre>
+<p>I didn't finish the implementation using this approach, but it seemed like it would work fine.
+So, I'm left to wonder whether one approach is really better than the other.
+Other than possible performance considerations, I think the main difference is that the effect approach requires the user to specify handlers, whereas the implicit approach is, well, implicit.</p>
+
+
+
+<a class="permalink" href="#6."><h2 id="6.">Editor integration</h2></a>
+
+<a class="permalink" href="#6.1."><h3 id="6.1.">Installation</h3></a>
+<p>I want to explicitly call out the installation process for Koka as something that is done overwhelmingly <em>right</em>.
+It might be a VS Code benefit, but on all of Windows, WSL, and Linux proper, it's been just a matter of installing the extension, creating a Koka file, and clicking the &quot;install everything&quot; button that pops up.</p>
+
+
+<a class="permalink" href="#6.2."><h3 id="6.2.">Auto-formatting</h3></a>
+<p>I've already seen about every variant I would expect for separating a bound name from its type annotation across Koka code I've seen.
+Sometimes it's <code>name: type</code>, sometimes <code>name : type</code>, and occasionally even <code>name:type</code>.</p>
+<p>After my experiences with other languages, I feel like I shouldn't be choosing which one of these I use.
+An auto-formatter should be making this decision for me.</p>
+<p>In particular, my favorite approach here is Go's:
+&quot;gofmt's style is no one's favorite, but gofmt is everyone's favorite.&quot;
+I fully believe that it should be the <em>language</em> that chooses an idiomatic style, once, for everyone; an auto-formatter should not be configurable (unless it is for a very old language).</p>
+<p>By coincidence, during the time I was writing this experience report today, <a href="https://github.com/koka-lang/koka/issues/521" target="_blank" rel="noopener">a corresponding issue</a> appeared.</p>
+
+
+<a class="permalink" href="#6.3."><h3 id="6.3.">Inlay hints</h3></a>
+<p>One minor… curiosity, not really a complaint.
+Koka's VS Code integration hides inferred specializations by default, and reveals them while holding Ctrl+Alt.
+This is actually <em>exactly the opposite</em> of a built-in VS Code setting:
+<code>&quot;editor.inlayHints.enabled&quot;: &quot;onUnlessPressed&quot;</code> shows inlay hints <em>except</em> when holding Ctrl+Alt.
+That happens to be the setting I use, but it's not such a critical thing that the provided behavior is a problem for me.</p>
+
+
+<a class="permalink" href="#6.4."><h3 id="6.4.">Language server output</h3></a>
+<p>A bit of annoyance is that the language server's logging in VS Code goes to a pseudo-terminal instead of an output window.</p>
+
+
+
+<a class="permalink" href="#7."><h2 id="7.">The Koka book</h2></a>
+<p>The Koka book has several sections that are unhelpfully short, &quot;todo,&quot; or even totally empty:</p>
+<ul>
+<li>3.3.4. Matching</li>
+<li>3.3.5. Extensible Data Types</li>
+<li>3.3.6. Inductive, Co-inductive, and Recursive Types</li>
+<li>3.4.9. Side-effect Isolation</li>
+<li>3.4.12. Linear Effects</li>
+<li>3.4.13 Named and Scoped Handlers</li>
+</ul>
+<p>Pattern matching at least works how I expect from other languages, so it's mostly just a matter of syntax, which is easy to find in the core library.
+I expect side-effect isolation is probably meant to be about the <code>run</code> function described in the row-polymorphic effects paper.
+Some more explanation on the other topics would be helpful.</p>
+<p>There is a <a href="https://koka-community.github.io/koka-docs/koka-docs.kk.html" target="_blank" rel="noopener">&quot;hidden&quot; docsite</a> in koka-community that fills out some of these sections, along with describing or mentioning a number of other topics I've mentioned in this report.
+I noticed it when I first found koka-community, but it slipped my mind to check it.
+Thanks to Tim Whiting for pointing me back to it (along with all your other work on Koka!).</p>
+<p>Aside from these sections, there were a couple minor issues I noticed in the grammar appendices which I'm reporting here instead of in an issue due to laziness:</p>
+<ul>
+<li>A number of terms in the lexical grammar are typechecked as Koka, leading to some strange results.</li>
+<li>The link to the Haskell implementation of the layout seems like it points to the wrong line today.</li>
+</ul>
+
+
+<a class="permalink" href="#8."><h2 id="8.">Overall</h2></a>
+<p>Despite all my complaining, Koka is absolutely a language I want to continue writing.
+Programming with effects feels like a very natural way to view the programming concepts I'm familiar with.
+Functional programming is always fun for me, and the escape hatch into procedural-style mutability can save a lot of thinky goop.</p>
+<p>A lot of these points are places I will probably look into contributing myself.</p>
+
+
+	</article>
+	<div id="clicky"><a style="display:none;" href="#">Click here to comment on GitHub!</a></div>
+	<script>
+		function injectClicky(event) {
+			if (event.origin !== 'https://giscus.app') return;
+			if (!(typeof event.data === 'object' && event.data.giscus)) return;
+			const giscusData = event.data.giscus;
+			if ('discussion' in giscusData) {
+				const clicky = document.querySelector('#clicky a');
+				clicky.href = giscusData.discussion.url;
+				clicky.style.display = "";
+				window.removeEventListener('message', injectClicky);
+			}
+		}
+		window.addEventListener('message', injectClicky);
+	</script>
+	<script src="https://giscus.app/client.js"
+		data-repo="zephyrtronium/zephyrtronium.github.io"
+		data-repo-id="MDEwOlJlcG9zaXRvcnkyNjEwNDIxNTQ="
+		data-category="Announcements"
+		data-category-id="DIC_kwDOD48v6s4B_JuI"
+		data-mapping="og:title"
+		data-reactions-enabled="1"
+		data-emit-metadata="1"
+		data-theme="https://zephyrtronium.github.io/style/giscus.css"
+		crossorigin="anonymous"
+		async>
+	</script>
+	
+<hr>
+<footer>
+	<p>
+	
+	Tagged: koka<br/>
+	
+		My blog uses <a href="https://github.com/oxalorg/sakura" target="_blank" rel="noreferrer noopener">sakura</a>, a classless CSS framework.
+		<br/>
+		Except as otherwise indicated, all content is Copyright 2024 Branden J Brown and is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
+		<br/>
+		<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>
+	</p>
+</footer>
+
+</body>

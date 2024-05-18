@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom">
   <title>zephyrtronium</title>
   <id>https://zephyrtronium.github.io/</id>
-  <updated>2024-04-30T20:50:15-05:00</updated>
+  <updated>2024-05-17T21:57:09-05:00</updated>
   <subtitle>correct opinions about types, go, capital letters, &amp;c.</subtitle>
   <link href="https://zephyrtronium.github.io/"></link>
   <author>
@@ -146,6 +146,17 @@
     <id>https://zephyrtronium.github.io/articles/lang-distribution.html</id>
     <link href="https://zephyrtronium.github.io/articles/lang-distribution.html" rel="alternate"></link>
     <summary type="html">I&#39;ve come up with the most sane and sustainable way to distribute packages.</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+  <entry>
+    <title>The Koka Experience</title>
+    <updated>2024-05-17T11:00:00Z</updated>
+    <id>https://zephyrtronium.github.io/articles/koka-experience.html</id>
+    <link href="https://zephyrtronium.github.io/articles/koka-experience.html" rel="alternate"></link>
+    <summary type="html">An experience report on the Koka programming language.</summary>
     <author>
       <name>zephyrtronium</name>
       <email>zephyrtronium@hey.com</email>
