@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<head>
+	
+<link rel="stylesheet" href="/style/normalize.css" type="text/css">
+<link rel="stylesheet" href="/style/sakura.css" type="text/css">
+<link rel="stylesheet" href="/style/zephyrtronium.css" type="text/css">
+<link rel="alternate" href="/weblog.atom" type="application/atom+xml">
+<meta property="og:site_name" content="zephyrtronium" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+	<title>The Birth and Death of Structured Concurrency | zephyrtronium</title>
+	<meta property="og:title" content="The Birth and Death of Structured Concurrency" />
+	<meta property="og:description" content="What replaces unrestricted concurrency in a language that refuses it?" />
+</head>
+<body>
+	<header>
+		<h3><a href="/">zephyrtronium</a></h3>
+	</header>
+	<hr>
+	<article>
+		<h1>The Birth and Death of Structured Concurrency</h1>
+		
+		<div class="subtitle">
+			<p class="chapter">in Thoughts on a Programming Language</p>
+			<p class="date">on Fri, 14 Jun 2024</p>
+		</div>
+		
+		
+<a class="permalink" href="#1."><h2 id="1.">Structures of Concurrency</h2></a>
+<p>One of the main goals of ligma lang is to have a language that implements <a href="/articles/lang.html#3." target="_blank" rel="noopener"><em>only</em> structured concurrency</a>.
+This is an exploration of how that manifests.</p>
+<p>Just like when replacing unrestricted (<code>goto</code>) control flow with structured control flow, we end up with multiple new concepts.
+I arrived at two: what I call <em>collect groups</em> and <em>select groups</em>.
+The former expresses &quot;compute all of these results, concurrently,&quot; and the latter is &quot;compute any one of these results.&quot;
+If we include two variants of each to express static and dynamic structures, and allow cancellation of groups, we cover most uses for concurrency.</p>
+<p>Collect and select are dual; the former corresponds to products and the latter to sums.
+I think that's a sign that the idea is solid.</p>
+<p>Well, insofar as structured concurrency itself is actually the best thing.
+And in exploring collect and select concurrency, I think I've reached the conclusion that it <em>isn't</em>.</p>
+
+
+<a class="permalink" href="#2."><h2 id="2.">Sequence Break</h2></a>
+<p>There's a different option that's more radical but definitely powerful.
+Instead of having special control flow for the parts of a program we want to make concurrent, just have concurrency be the default.
+Make operations sequential only when they have an actual dependency.</p>
+<p><a href="https://www.youtube.com/watch?v=sT6VJkkhy0o" target="_blank" rel="noopener">Haxl</a> has explored this concept in the context of Haskell.
+It requires wrapping every operation in a custom type in order to use them in the concurrent environment, but that's because it has to fit itself into Haskell's existing sequential model.
+With direct support designed into the language, and perhaps a bit less focus on composing with other language elements, concurrent-by-default could become much more accessible.</p>
+<p>In principle, we could even automatically parallelize loops when each iteration is independent.
+It would be nice to have a way to guarantee concurrent looping as a way to help avoid performance cliffs, but this would be just a matter of formalizing loops whose bodies are combinators.</p>
+<p>I think concurrent-by-default totally subsumes the collect group idea.
+Computations naturally collect when you use them in a product-y way.</p>
+<p>I find two concerns that come up with this idea.
+The first is that it might be hard to express an <em>incomplete</em> computation as an expression result.
+The machinery I have in mind for select groups likely help with that, by allowing us to express a group of one process.</p>
+<p>The second concern is how this interacts with synchronization primitives.
+I suspect it's fine to treat internally synchronized types like atomics and monitors as simply never forming dependencies for the purpose of concurrency analysis.
+Externally synchronized data, i.e. mutexes separate from the variables they protect, probably require dedicated support in the language; it might be preferable to just not allow them.</p>
+
+
+<a class="permalink" href="#3."><h2 id="3.">Select</h2></a>
+<p>That's the collect part down.
+Select groups still need something different.</p>
+<p>The insight with selection is that any number of processes are computing a result of the same type.
+In other words, we can handle them with just a unary type constructor.
+Like &quot;pointer to T&quot; or &quot;array of T,&quot; we can have &quot;eventually T.&quot;
+Or, to use a more familiar term, &quot;future T.&quot;</p>
+<p>Select groups as I imagine them just generalize the familiar concept of futures to multiple processors per term.
+The first process to compute a result (or one selected non-deterministically if multiple are ready at the time of waiting) becomes the result for the whole group, and the rest halt.
+Alternatively, we can <em>cancel</em> the entire group, supplying the group's result immediately – possibly from outside.</p>
+<p>Concretely, the operations we want include:</p>
+<ul>
+<li>Express a future type.
+Let's say if we have a type <code>T</code>, then a future <code>T</code> could be <code>@T</code>, roughly borrowing an ancient notation from Io.</li>
+<li>Create a select group.
+The syntax for this will probably depend on how we express literals of other varieties of types, which I want to spend more time thinking about.</li>
+<li>Add a process to an existing select group.
+A process starts executing as soon as it is added.
+Syntactically, if we make this a binary operation with the group operand as its result, we can use a builder-like notation to add many processes at once.</li>
+<li>Wait on a select group, blocking until a result is available.
+All waits on a given group yield the same result.
+Similar to the dereferencing operator of C-like languages, we can reuse the type constructor notation: if we have a value <code>bocchi</code> of type <code>@T</code>, then the expression <code>ryou = @bocchi</code> waits for <code>bocchi</code> to complete and assigns the result to <code>ryou</code>.</li>
+<li>Cancel a select group with the result to yield.
+If a process has already completed, this may do nothing, per the rule on waiting.</li>
+</ul>
+<p>There is one important subtlety to this.
+A future containing <em>zero</em> processors can operate on uninhabited types.
+That's a <a href="https://counterexamples.org/eventually-nothing.html" target="_blank" rel="noopener">very</a> <a href="https://counterexamples.org/dubious-evidence.html" target="_blank" rel="noopener">common</a> <a href="https://counterexamples.org/false-pretenses.html" target="_blank" rel="noopener">source</a> of unsoundness across programming languages.
+It seems feasible to prevent waiting on empty groups, but it isn't necessarily a bad thing to do so when the group could have processes added after waiting begins.</p>
+
+
+	</article>
+	<div id="clicky"><a style="display:none;" href="#">Click here to comment on GitHub!</a></div>
+	<script>
+		function injectClicky(event) {
+			if (event.origin !== 'https://giscus.app') return;
+			if (!(typeof event.data === 'object' && event.data.giscus)) return;
+			const giscusData = event.data.giscus;
+			if ('discussion' in giscusData) {
+				const clicky = document.querySelector('#clicky a');
+				clicky.href = giscusData.discussion.url;
+				clicky.style.display = "";
+				window.removeEventListener('message', injectClicky);
+			}
+		}
+		window.addEventListener('message', injectClicky);
+	</script>
+	<script src="https://giscus.app/client.js"
+		data-repo="zephyrtronium/zephyrtronium.github.io"
+		data-repo-id="MDEwOlJlcG9zaXRvcnkyNjEwNDIxNTQ="
+		data-category="Announcements"
+		data-category-id="DIC_kwDOD48v6s4B_JuI"
+		data-mapping="og:title"
+		data-reactions-enabled="1"
+		data-emit-metadata="1"
+		data-theme="https://zephyrtronium.github.io/style/giscus.css"
+		crossorigin="anonymous"
+		async>
+	</script>
+	
+<hr>
+<footer>
+	<p>
+	
+	Tagged: programming language, types, structured concurrency<br/>
+	
+		My blog uses <a href="https://github.com/oxalorg/sakura" target="_blank" rel="noreferrer noopener">sakura</a>, a classless CSS framework.
+		<br/>
+		Except as otherwise indicated, all content is Copyright 2024 Branden J Brown and is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">Creative Commons Attribution-NoDerivatives 4.0 International License</a>.
+		<br/>
+		<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>
+	</p>
+</footer>
+
+</body>
