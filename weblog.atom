@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom">
   <title>zephyrtronium</title>
   <id>https://zephyrtronium.github.io/</id>
-  <updated>2024-06-14T21:28:00-05:00</updated>
+  <updated>2025-05-20T22:46:01-04:00</updated>
   <subtitle>correct opinions about types, go, capital letters, &amp;c.</subtitle>
   <link href="https://zephyrtronium.github.io/"></link>
   <author>
@@ -212,6 +212,17 @@
     <id>https://zephyrtronium.github.io/articles/bocchi.html</id>
     <link href="https://zephyrtronium.github.io/articles/bocchi.html" rel="alternate"></link>
     <summary type="html">Unfoo your bar, baz.</summary>
+    <author>
+      <name>zephyrtronium</name>
+      <email>zephyrtronium@hey.com</email>
+    </author>
+  </entry>
+  <entry>
+    <title>Concurrency and Parallelism, Specifically</title>
+    <updated>2025-05-20T11:00:00Z</updated>
+    <id>https://zephyrtronium.github.io/articles/concurrency.html</id>
+    <link href="https://zephyrtronium.github.io/articles/concurrency.html" rel="alternate"></link>
+    <summary type="html">Concurrency is not parallelism. What exactly is it, then?</summary>
     <author>
       <name>zephyrtronium</name>
       <email>zephyrtronium@hey.com</email>
